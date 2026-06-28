@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Verificación Judicial{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-dark bg-primary shadow mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">trustbridge</a>
+        <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> Panel de Verificación Judicial</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Ingresa el hash SHA-256 o el ID del documento para verificar su autenticidad.</p>
+                    <form method="get" action="{% url 'core_verify_document' %}">
+                        <div class="input-group input-group-lg">
+                            <input type="text" name="hash" class="form-control"
+                                   placeholder="Hash SHA-256 o ID del documento"
+                                   value="{{ hash_query }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Verificar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if hash_query and not doc %}
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                No se encontró ningún documento con ese hash o ID.
+            </div>
+            {% endif %}
+
+            {% if doc %}
+            <div class="card shadow-sm mb-3 border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Documento verificado</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted w-25">Título</td>
+                            <td class="fw-semibold">{{ doc.title }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">ID</td>
+                            <td><code>{{ doc.id }}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">SHA-256</td>
+                            <td><code>{{ doc.hash_sha256 }}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Estado</td>
+                            <td>
+                                <span class="badge {% if doc.status == 'SIGNED' %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+                                    {{ doc.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Propietario</td>
+                            <td>{{ doc.owner.email }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Creado</td>
+                            <td>{{ doc.created_at|date:"d/m/Y H:i:s" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if sig %}
+            <div class="card shadow-sm mb-3 border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-pen"></i> Datos de la firma</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted w-25">Firmado por</td>
+                            <td class="fw-semibold">{{ sig.signer.email }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Fecha</td>
+                            <td>{{ sig.signed_at|date:"d/m/Y H:i:s" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">IP</td>
+                            <td><code>{{ sig.ip_address }}</code></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Blochain TX</td>
+                            <td><code>{{ sig.blockchain_tx_hash }}</code></td>
+                        </tr>
+                        {% if sig.latitude %}
+                        <tr>
+                            <td class="text-muted">GPS</td>
+                            <td>{{ sig.latitude }}, {{ sig.longitude }}
+                                {% if sig.geo_verified %}<span class="badge bg-success">Verificado</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% if sig.liveness_verified %}
+                        <tr>
+                            <td class="text-muted">Liveness</td>
+                            <td><span class="badge bg-success">Verificado</span></td>
+                        </tr>
+                        {% endif %}
+                        {% if sig.device_fingerprint %}
+                        <tr>
+                            <td class="text-muted">Huella dispositivo</td>
+                            <td><code>{{ sig.device_fingerprint.fingerprint }}</code></td>
+                        </tr>
+                        {% endif %}
+                        {% if sig.verification_video %}
+                        <tr>
+                            <td class="text-muted">Video verificación</td>
+                            <td><a href="{{ sig.verification_video.url }}" class="btn btn-sm btn-outline-info" target="_blank">Ver video</a></td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-pen"></i> Este documento aún no ha sido firmado.
+            </div>
+            {% endif %}
+
+            {% if witnesses %}
+            <div class="card shadow-sm mb-3 border-warning">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Testigos ({{ witnesses|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% for w in witnesses %}
+                    <div class="mb-2 pb-2 border-bottom">
+                        <strong>{{ w.witness_name }}</strong>
+                        {% if w.identity_confirmed %}<span class="badge bg-success">Identidad confirmada</span>{% endif %}
+                        <br>
+                        <span class="text-muted small">{{ w.created_at|date:"d/m/Y H:i" }}</span>
+                        {% if w.witness_notes %}
+                        <p class="small text-muted mb-0 mt-1">{{ w.witness_notes }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if analysis %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-robot"></i> Análisis IA</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Riesgo:</strong> {{ analysis.risk_score }}/100</p>
+                    <p>{{ analysis.summary }}</p>
+                    {% if analysis.recommendations %}
+                    <div class="alert alert-info mb-0">{{ analysis.recommendations }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if doc %}
+            <div class="text-center mt-3">
+                <button class="btn btn-outline-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimir reporte de verificación
+                </button>
+                <a href="{% url 'core_verify_document' %}" class="btn btn-outline-secondary">Nueva búsqueda</a>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    nav, .card-header, .btn, form, .input-group { display: none !important; }
+    .card { border: 1px solid #000 !important; box-shadow: none !important; }
+    body { font-size: 12pt; }
+}
+</style>
+{% endblock %}

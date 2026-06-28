@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Dead Man Switches{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white-50 small">{{ user.email }}</span>
+            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
+            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">Dead Man Switches</h3>
+    </div>
+
+    {% if triggers %}
+    <div class="row">
+        {% for t in triggers %}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm {% if t.triggered_at %}border-secondary{% else %}border-danger{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center
+                    {% if t.triggered_at %}bg-secondary text-white{% else %}bg-danger text-white{% endif %}">
+                    <h6 class="mb-0">{{ t.document.title }}</h6>
+                    {% if t.triggered_at %}
+                    <span class="badge bg-light text-dark">Ejecutado</span>
+                    {% else %}
+                    <span class="badge bg-light text-danger">Activo</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0 small">
+                        <tr>
+                            <td class="text-muted">Intervalo</td>
+                            <td>Cada {{ t.check_in_interval_days }} días</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Último check-in</td>
+                            <td>{{ t.last_check_in|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Acción</td>
+                            <td>{{ t.get_trigger_action_display }}</td>
+                        </tr>
+                    </table>
+                    {% if not t.triggered_at %}
+                    <a href="{% url 'core_trigger_checkin' t.id %}" class="btn btn-success btn-sm mt-2">
+                        <i class="bi bi-check-lg"></i> Check-in ahora
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'core_document_detail' t.document.id %}" class="btn btn-outline-primary btn-sm mt-2">
+                        <i class="bi bi-eye"></i> Ver documento
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-alarm text-muted" style="font-size: 3rem;"></i>
+            <h5 class="mt-3">No tienes Dead Man Switches activos</h5>
+            <p class="text-muted">Configura uno desde la página de detalle de cualquier documento.</p>
+            <a href="{% url 'core_dashboard' %}" class="btn btn-primary">Ir al dashboard</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

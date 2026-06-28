@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Dirección de Correo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100 py-5">
+        <div class="col-md-6 col-lg-5">
+            <div class="text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary">trustbridge</h1>
+                <p class="text-muted">Firmas digitales con validez judicial</p>
+            </div>
+            
+            <div class="card shadow border-0">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4 text-success">
+                        <i class="bi bi-shield-check display-3"></i>
+                    </div>
+                    <h3 class="card-title fw-bold mb-3">Confirmar correo electrónico</h3>
+                    
+                    {% if confirmation %}
+                    <p class="text-muted mb-4">
+                        Por favor, confirma que la dirección de correo <strong>{{ confirmation.email_address.email }}</strong> es tuya.
+                    </p>
+                    
+                    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">Confirmar correo</button>
+                            <a href="{% url 'account_login' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-danger mb-4">
+                        Este enlace de confirmación de correo ya no es válido o ha expirado.
+                    </div>
+                    <div class="d-grid">
+                        <a href="{% url 'account_login' %}" class="btn btn-primary">Volver al inicio de sesión</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <p class="text-center text-muted small mt-4">TrustBridge &copy; 2026 &middot; Firma Digital Segura</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

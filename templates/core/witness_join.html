@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Unirse como testigo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-6">
+            <div class="text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary">trustbridge</h1>
+                <p class="text-muted">Verificación de identidad como testigo</p>
+            </div>
+            <div class="card shadow">
+                <div class="card-body p-4 text-center">
+                    <i class="bi bi-person-badge text-info" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3">Has sido invitado como testigo</h4>
+                    <p class="text-muted">
+                        El documento <strong>{{ session.document.title }}</strong> requiere
+                        que verifiques la identidad del firmante en vivo.
+                    </p>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Tu nombre completo</label>
+                            <input type="text" name="witness_name" class="form-control form-control-lg"
+                                   placeholder="Ej: Dr. Juan Pérez" required>
+                            <div class="form-text">Este nombre quedará registrado como testigo oficial</div>
+                        </div>
+                        <button type="submit" class="btn btn-info btn-lg text-white w-100">
+                            <i class="bi bi-camera-video"></i> Unirse a la verificación
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

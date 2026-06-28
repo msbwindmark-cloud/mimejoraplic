@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Completar verificación{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-dark bg-primary shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">trustbridge</a>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Finalizar verificación</h5>
+                </div>
+                <div class="card-body">
+                    <p>Como testigo, debes confirmar que has verificado la identidad de <strong>{{ session.owner.email }}</strong> para el documento <strong>{{ session.document.title }}</strong>.</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="identity_confirmed" class="form-check-input" id="confirmCheck" role="switch">
+                                <label class="form-check-label" for="confirmCheck">
+                                    <strong>Confirmo que la identidad del firmante ha sido verificada</strong>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notas del testigo (opcional)</label>
+                            <textarea name="witness_notes" class="form-control" rows="3"
+                                      placeholder="Ej: Verifiqué su identidad mediante INE y confirmó en video que firmaría el contrato..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success btn-lg flex-fill">
+                                <i class="bi bi-check-circle"></i> Completar verificación
+                            </button>
+                            <a href="{% url 'core_verify_document' %}" class="btn btn-outline-danger btn-lg">Rechazar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

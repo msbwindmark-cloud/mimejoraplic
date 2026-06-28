@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Subir Documento{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white-50 small">{{ user.email }}</span>
+            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
+            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-upload"></i> Subir nuevo documento</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Título del documento</label>
+                            {{ form.title }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Archivo (PDF, DOC, DOCX, PNG, JPG — máx 50MB)</label>
+                            {{ form.file }}
+                            <div class="form-text">El archivo será hasheado con SHA-256 al subirlo para garantizar su integridad.</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-cloud-upload"></i> Subir documento
+                            </button>
+                            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3 bg-light">
+                <div class="card-body">
+                    <h6><i class="bi bi-shield-check text-primary"></i> Seguridad garantizada</h6>
+                    <ul class="small text-muted mb-0">
+                        <li>Hash SHA-256 calculado al instante para detectar cualquier manipulación</li>
+                        <li>Firma con verificación en dos pasos (2FA obligatorio)</li>
+                        <li>Huella digital del dispositivo vinculada a cada firma</li>
+                        <li>Auditoría completa de todas las acciones</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

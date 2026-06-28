@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white-50 small">{{ user.email }}</span>
+            <span class="badge bg-success">2FA Activo</span>
+            <a href="{% url 'core_verify_document' %}" class="btn btn-outline-light btn-sm">Verificación judicial</a>
+            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
+        </div>
+    </div>
+</nav>
+
+<main class="container py-4">
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-primary shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Documentos</h6>
+                    <h2 class="card-title text-primary mb-0">{{ documents|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-success shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Firmas realizadas</h6>
+                    <h2 class="card-title text-success mb-0">{{ signatures|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-info shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-subtitle text-muted mb-1">Dispositivos</h6>
+                    <h2 class="card-title text-info mb-0">{{ user.devices.count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Mis documentos</h5>
+                    <a href="{% url 'core_document_upload' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg"></i> Nuevo documento
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if documents %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in documents %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'core_document_detail' doc.id %}" class="text-decoration-none fw-semibold">{{ doc.title }}</a>
+                                    </td>
+                                    <td>
+                                        {% if doc.status == 'SIGNED' %}
+                                        <span class="badge bg-success">Firmado</span>
+                                        {% elif doc.status == 'PENDING' %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Borrador</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4 mb-0">
+                        <i class="bi bi-file-earmark-text"></i> No tienes documentos aún.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Firmas recientes</h5>
+                </div>
+                <div class="card-body">
+                    {% if signatures %}
+                    <ul class="list-group list-group-flush mb-0">
+                        {% for sig in signatures %}
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <a href="{% url 'core_document_detail' sig.document.id %}" class="text-decoration-none fw-semibold small">{{ sig.document.title }}</a>
+                                    <br>
+                                    <span class="text-muted small">{{ sig.signed_at|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted text-center py-4 mb-0">
+                        <i class="bi bi-pen"></i> Aún no has firmado nada.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Dead Man Switches</h5>
+                    <a href="{% url 'core_triggers_list' %}" class="btn btn-outline-danger btn-sm">Ver todos</a>
+                </div>
+                <div class="card-body">
+                    {% if triggers %}
+                    <ul class="list-group list-group-flush mb-0">
+                        {% for t in triggers %}
+                        <li class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <a href="{% url 'core_document_detail' t.document.id %}" class="text-decoration-none fw-semibold small">{{ t.document.title }}</a>
+                                    <br>
+                                    <span class="text-muted small">Último check-in: {{ t.last_check_in|date:"d/m/Y" }}</span>
+                                </div>
+                                <a href="{% url 'core_trigger_checkin' t.id %}" class="btn btn-success btn-sm">
+                                    <i class="bi bi-check-lg"></i>
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted text-center py-4 mb-0">
+                        <i class="bi bi-alarm"></i> Sin switches activos.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if messages %}
+    {% for message in messages %}
+    Swal.fire({
+        icon: '{{ message.tags }}',
+        title: '{{ message.message }}',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true
+    });
+    {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %}

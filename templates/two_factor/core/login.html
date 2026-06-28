@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}
+    {% if wizard.steps.current == 'auth' %}
+        Iniciar Sesión
+    {% elif wizard.steps.current == 'token' %}
+        Verificación de Seguridad (2FA)
+    {% else %}
+        Token de Respaldo
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-5">
+            <div class="text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary">trustbridge</h1>
+                <p class="text-muted">Firmas digitales con validez judicial</p>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <form action="" method="post">
+                        {% csrf_token %}
+                        {{ wizard.management_form }}
+
+                        {% if wizard.steps.current == 'auth' %}
+                            <h3 class="card-title text-center mb-4">Iniciar sesión</h3>
+                            
+                            {% if form.errors or wizard.errors %}
+                            <div class="alert alert-danger py-2">
+                                Correo o contraseña incorrectos.
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <label for="id_auth-username" class="form-label">Correo electrónico</label>
+                                <input type="email" name="auth-username" id="id_auth-username" autocomplete="email" required class="form-control form-control-lg" placeholder="ejemplo@correo.com">
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_auth-password" class="form-label">Contraseña</label>
+                                <input type="password" name="auth-password" id="id_auth-password" autocomplete="current-password" required class="form-control form-control-lg" placeholder="••••••••">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg w-100">Iniciar sesión</button>
+                            
+                            <div class="text-center mt-4">
+                                <span class="text-muted">¿No tienes cuenta?</span>
+                                <a href="{% url 'account_signup' %}" class="text-decoration-none fw-semibold">Regístrate</a>
+                            </div>
+
+                        {% elif wizard.steps.current == 'token' %}
+                            <div class="text-center mb-3">
+                                <i class="bi bi-shield-lock-fill text-primary" style="font-size: 3rem;"></i>
+                            </div>
+                            <h4 class="text-center">Verificación en dos pasos</h4>
+                            <p class="text-muted text-center small">Ingresa el código de tu aplicación autenticadora</p>
+                            
+                            {% if form.errors %}
+                            <div class="alert alert-danger py-2 text-center">
+                                Código incorrecto. Por favor, inténtalo de nuevo.
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <input type="text" name="token-otp_token" id="id_token-otp_token" autocomplete="one-time-code" inputmode="numeric" required autofocus
+                                       class="form-control form-control-lg text-center"
+                                       placeholder="------" style="letter-spacing: 0.5rem; font-size: 1.5rem;">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg w-100">Verificar</button>
+
+                            <div class="text-center mt-3">
+                                <button name="wizard_goto_step" type="submit" value="backup" class="btn btn-link btn-sm text-decoration-none small">
+                                    ¿Problemas con el código? Usa un token de respaldo
+                                </button>
+                            </div>
+
+                        {% elif wizard.steps.current == 'backup' %}
+                            <div class="text-center mb-3">
+                                <i class="bi bi-shield-slash-fill text-warning" style="font-size: 3rem;"></i>
+                            </div>
+                            <h4 class="text-center">Token de Respaldo</h4>
+                            <p class="text-muted text-center small">Por favor, introduce uno de tus tokens de respaldo para acceder a tu cuenta.</p>
+                            
+                            {% if form.errors %}
+                            <div class="alert alert-danger py-2 text-center">
+                                Token de respaldo incorrecto o ya utilizado.
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <input type="text" name="backup-otp_token" id="id_backup-otp_token" autocomplete="off" required
+                                       class="form-control form-control-lg text-center"
+                                       placeholder="------" style="letter-spacing: 0.2rem; font-size: 1.5rem;">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning btn-lg w-100 text-white">Verificar Token</button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            <p class="text-center text-muted small mt-3">TrustBridge &copy; 2026 &middot; Firma Digital Segura</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

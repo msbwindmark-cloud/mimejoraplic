@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Dead Man Switch — {{ doc.title }}{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-white-50 small">{{ user.email }}</span>
+            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
+            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-3 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-alarm"></i> Configurar Dead Man Switch</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong><i class="bi bi-exclamation-triangle"></i> ¿Qué es esto?</strong>
+                        <p class="mb-0 mt-1">El Dead Man Switch protege tu contrato: si dejas de hacer check-in por el periodo configurado, el sistema ejecutará la acción que elijas automáticamente. Ideal para testamentos, herencias, o acuerdos condicionales.</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Documento</label>
+                            <input type="text" class="form-control" value="{{ doc.title }}" disabled>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Intervalo de check-in (días)</label>
+                                <input type="number" name="interval_days" value="30" min="1" max="365" class="form-control form-control-lg" required>
+                                <div class="form-text">Cada cuántos días debes hacer check-in</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Periodo de gracia (días)</label>
+                                <input type="number" name="grace_days" value="7" min="0" max="90" class="form-control form-control-lg" required>
+                                <div class="form-text">Días extra después del vencimiento</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Acción al vencer</label>
+                            <select name="trigger_action" class="form-select form-select-lg">
+                                <option value="NOTIFY">Notificarme por correo</option>
+                                <option value="TRANSFER">Transferir documento (próximamente)</option>
+                                <option value="PUBLISH">Publicar documento (próximamente)</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg flex-fill">
+                                <i class="bi bi-shield-check"></i> Activar Dead Man Switch
+                            </button>
+                            <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6><i class="bi bi-info-circle"></i> Ejemplos de uso</h6>
+                    <ul class="small text-muted mb-0">
+                        <li><strong>Testamento digital:</strong> Si no haces check-in en 90 días, se notifica a tus herederos</li>
+                        <li><strong>Contrato de socio:</strong> Si un fundador desaparece, su participación se transfiere automáticamente</li>
+                        <li><strong>Acuerdo condicional:</strong> El contrato se activa solo si no hay check-in por X días</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+Todo probado y funcionando. Resumen de lo nuevo:
+
+### ✅ Modo Testigo (Witness Mode)
+- Desde el detalle del documento: **"Invitar testigo"** → ingresas su email
+- El testigo recibe un enlace único (ej: `/witness/<uuid>/`)
+- Sin necesidad de cuenta: **abre el enlace, ingresa su nombre, entra a la sala**
+- WebRTC activa la cámara del testigo para verificación en vivo
+- El testigo completa la sesión: confirma identidad + notas
+- Queda registrado: quién fue testigo, cuándo, qué dijo, y si confirmó
+
+### ✅ Panel de Verificación Judicial (público)
+- Accesible desde: **"Verificación judicial"** en el navbar
+- Cualquier persona puede buscar un documento por **hash SHA-256** o **ID**
+- Muestra: datos del documento, firma (IP, blockchain TX, GPS, huella), testigos, análisis IA
+- **Botón de imprimir** → genera un reporte de validez listo para presentar en juzgado
+- Sin autenticación requerida (cualquier juez/abogado puede verificar)
+
+### Estructura completa del proyecto:
+```
+TrustBridge/
+├── accounts/         # Login, 2FA, User personalizado
+├── core/             # Documentos, firmas, blockchain, IA, testigos
+│   ├── services.py   # Blockchain, geocerca, liveness, AI, dead switch
+│   ├── management/   # Comando check_triggers
+│   └── templates/    # Todos los templates Bootstrap
+└── templates/        # Base, login, signup, 2FA
+```
+
+¿Listo para algo más o prefieres que preparemos el `settings.py` para producción (PostgreSQL, Redis, SSL, etc.)?
+
+
+
+
+
+
+Todo listo. Resumen de lo que se hizo:
+
+### 📖 README.md creado
+Manual completo con:
+- Instalación en local y PythonAnywhere
+- Descripción de cada funcionalidad
+- Variables de entorno
+- Flujo completo para el usuario
+- Estructura del proyecto
+- Comandos útiles
+
+### ⚙️ settings.py ampliado
+Todo comentado, listo para activar cuando migres a producción:
+- **PostgreSQL** — configuración completa con SSL
+- **SQL Server** — para Azure/on-prem
+- **MongoDB** — para logs/analytics
+- **Redis** — caché + sesiones + rate limiting
+- **Celery** — tareas asíncronas
+- **SSL/HTTPS** — forzar conexión segura
+- **Email SMTP** — Gmail/SendGrid
+- **Logging** — archivo + consola
+- **Sentry** — monitoreo de errores
+
+### 📦 requirements.txt optimizado
+Dependencias core + opcionales comentadas.
+
+Para **PythonAnywhere** solo subes, haces `pip install -r requirements.txt`, `migrate`, `collectstatic`, y apuntas el WSGI. Sin cambios en settings porque SQLite ya está activo por defecto.

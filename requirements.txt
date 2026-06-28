@@ -1,0 +1,31 @@
+# ─── Core ────────────────────────────
+django>=5.0
+gunicorn
+whitenoise
+
+# ─── Auth ────────────────────────────
+django-allauth
+django-otp
+django-two-factor-auth
+django-cors-headers
+djangorestframework
+
+# ─── AI + Files ──────────────────────
+openai
+PyMuPDF
+
+# ─── Blockchain ──────────────────────
+web3
+
+# ─── Producción (opcionales) ─────────
+# psycopg2-binary      # PostgreSQL
+# mssql-django         # SQL Server
+# pymongo              # MongoDB
+# redis                # Cache/Celery
+# django-redis         # Redis backend
+# celery               # Tareas async
+# sentry-sdk           # Error tracking
+
+# ─── Dev ─────────────────────────────
+# django-webauthn      # Passkeys (FIDO2)
+# django-channels      # WebSockets

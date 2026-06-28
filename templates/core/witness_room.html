@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Verificación en vivo{% endblock %}
+
+{% block content %}
+<nav class="navbar navbar-dark bg-primary shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">trustbridge</a>
+        <span class="text-white-50 small">Sala: {{ session.room_id|truncatechars:20 }}</span>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-camera-video"></i> Verificación en vivo</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="bg-dark rounded p-2 mb-2">
+                                <video id="localVideo" class="w-100 rounded" autoplay muted playsinline></video>
+                            </div>
+                            <p class="small text-muted">Tu cámara</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-dark rounded p-2 mb-2 d-flex align-items-center justify-content-center" style="min-height: 180px;">
+                                <div id="remotePlaceholder" class="text-white-50">
+                                    <i class="bi bi-person" style="font-size: 3rem;"></i>
+                                    <p class="mb-0">Esperando al firmante...</p>
+                                </div>
+                                <video id="remoteVideo" class="w-100 rounded d-none" autoplay playsinline></video>
+                            </div>
+                            <p class="small text-muted">Firmante</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong><i class="bi bi-info-circle"></i> Instrucciones:</strong>
+                        <ul class="mb-0 text-start mt-2">
+                            <li>Verifica que la persona coincida con el nombre y email del firmante</li>
+                            <li>Pregúntale: "¿Eres {{ session.owner.email }} y confirmas que firmarás este documento?"</li>
+                            <li>Si estás seguro, presiona "Confirmar identidad"</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{% url 'witness_complete' session.id %}" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Confirmar identidad y finalizar
+                        </a>
+                        <a href="{% url 'core_verify_document' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Rechazar
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6>Información de la sesión</h6>
+                    <table class="table table-borderless small mb-0">
+                        <tr><td class="text-muted w-25">Documento</td><td>{{ session.document.title }}</td></tr>
+                        <tr><td class="text-muted">Firmante</td><td>{{ session.owner.email }}</td></tr>
+                        <tr><td class="text-muted">Testigo</td><td>{{ session.witness_name }}</td></tr>
+                        <tr><td class="text-muted">Sala</td><td><code>{{ session.room_id }}</code></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Simple WebRTC — one-way video for witness verification
+let localStream = null;
+
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(function(stream) {
+        localStream = stream;
+        document.getElementById('localVideo').srcObject = stream;
+    })
+    .catch(function() {
+        document.getElementById('localVideo').parentElement.innerHTML =
+            '<div class="text-white-50 py-5 text-center"><i class="bi bi-camera-off" style="font-size: 3rem;"></i><p class="mb-0 mt-2">Cámara no disponible</p></div>';
+    });
+
+window.addEventListener('beforeunload', function() {
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+});
+</script>
+{% endblock %}
