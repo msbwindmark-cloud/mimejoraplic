@@ -1,0 +1,73 @@
+Edited aquien.md
+Ran command: `git init`
+Ran command: `git add .`
+Viewed MANUAL_DE_PRESENTACION.md:112-125
+Ran command: `git add .`
+
+I will read the current `.gitignore` file.
+
+Viewed .gitignore:1-7
+
+I will update the `.gitignore` file to ensure the virtual environment `venv/`, local SQLite database `db.sqlite3`, media uploads, compiled python cache files, and private environment files are completely ignored.
+
+Edited .gitignore
+
+I will run Git commands to clear the staging area and re-add only the files permitted by our new `.gitignore` configuration.
+
+Ran command: `git reset && git rm -r --cached . && git add .`
+
+I will run `git reset` in PowerShell to unstage all files.
+
+Ran command: `git reset`
+
+I will clear the Git cache.
+
+Ran command: `git rm -r --cached .`
+
+I will re-add the project files to Git. Aberrant folders like `venv/` will be ignored this time.
+
+Ran command: `git add .`
+
+I will check the git status to confirm only the clean project files are staged.
+
+Ran command: `git status -s`
+
+I will make the first Git commit to save the clean project state.
+
+Ran command: `git commit -m "First commit: Clean TrustBridge codebase for PythonAnywhere"`
+
+¡Hecho! He preparado tu repositorio de Git a la perfección para que lo despliegues en **PythonAnywhere** sin subir archivos innecesarios.
+
+Esto es lo que he realizado:
+
+1. **🧹 Limpieza del Git:** 
+   El primer `git add .` que hiciste estaba intentando subir todos los archivos de tu entorno virtual local (`venv/`), lo cual habría ralentizado y saturado tu repositorio (añadiendo miles de archivos innecesarios de librerías). He deshecho esa acción (`git reset`).
+
+2. **📝 Nuevo `.gitignore` Optimizado:**
+   He creado un archivo `.gitignore` adaptado para Django y PythonAnywhere que ignora automáticamente:
+   * Tu entorno virtual local (`venv/`).
+   * Los archivos compilados de Python (`__pycache__`, `*.pyc`).
+   * La base de datos local de pruebas (`db.sqlite3`).
+   * Los archivos de configuración secreta (`.env`).
+   * Los archivos subidos de prueba (`media/`) y archivos generados (`staticfiles/`).
+
+3. **🚀 Primer Commit Realizado:**
+   He agregado los archivos con las nuevas reglas y he realizado el primer commit limpio:
+   > **`First commit: Clean TrustBridge codebase for PythonAnywhere`** (67 archivos agregados de forma limpia).
+
+---
+
+### 💡 Consejos para tu despliegue en PythonAnywhere:
+1. **Base de Datos:** Al estar ignorada la base de datos local en Git (como debe ser), cuando subas el código a PythonAnywhere, abre una consola allí y ejecuta:
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser
+   ```
+   Esto creará una base de datos limpia en el servidor.
+2. **Entorno Virtual en la Nube:** En PythonAnywhere crearás un nuevo entorno virtual e instalarás los requerimientos usando el archivo `requirements.txt` que ya está en tu commit:
+   ```bash
+   mkvirtualenv myenv --python=python3.10  # O la versión que prefieras
+   pip install -r requirements.txt
+   ```
+
+¡Tu código está 100% limpio y listo para ser subido a GitHub/GitLab o directamente a tu servidor de PythonAnywhere!
