@@ -13,6 +13,8 @@ git remote add origin https://github.com/msbwindmark-cloud/mimejoraplic.git
 git push -u origin main
 
 
+git remote set-url origin https://github.com/msbwindmark-cloud/mimejoraplic.git
+
 
 
 
