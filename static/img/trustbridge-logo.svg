@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3c72"/>
+      <stop offset="100%" stop-color="#2a5298"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield background -->
+  <rect x="10" y="10" width="180" height="180" rx="36" fill="url(#bg)"/>
+  <!-- Bridge icon -->
+  <path d="M55 130 V95 Q75 70 100 70 Q125 70 145 95 V130" stroke="url(#accent)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Bridge pillars -->
+  <rect x="50" y="120" width="10" height="25" rx="3" fill="url(#accent)" opacity="0.8"/>
+  <rect x="140" y="120" width="10" height="25" rx="3" fill="url(#accent)" opacity="0.8"/>
+  <!-- Shield check mark -->
+  <path d="M90 100 L98 110 L115 90" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

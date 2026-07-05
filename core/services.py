@@ -108,14 +108,19 @@ def verify_liveness(video_path):
 # ──────────────────────────────────────────
 
 def extract_text_from_pdf(filepath):
-    text = ""
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext == '.pdf':
+        try:
+            with fitz.open(filepath) as doc:
+                text = "".join(page.get_text() for page in doc)
+            return text[:15000]
+        except Exception:
+            pass
     try:
-        with fitz.open(filepath) as doc:
-            for page in doc:
-                text += page.get_text()
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            return f.read()[:15000]
     except Exception:
-        text = "[No se pudo extraer texto del PDF]"
-    return text[:15000]
+        return "[No se pudo leer el contenido del documento]"
 
 
 def analyze_contract_with_ai(document):
@@ -148,6 +153,9 @@ Analiza el siguiente contrato y responde SOLO con JSON válido (sin markdown):
 CONTRATO:
 {text[:12000]}
 """
+    import logging
+    logging.getLogger('openai').setLevel(logging.ERROR)
+    logging.getLogger('httpx').setLevel(logging.ERROR)
     try:
         resp = client.chat.completions.create(
             model="gpt-4o-mini",

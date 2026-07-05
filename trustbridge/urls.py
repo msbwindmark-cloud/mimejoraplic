@@ -20,10 +20,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse
 from two_factor.urls import urlpatterns as tf_urls
+from core.views import landing
 
 FAVICON_SVG = b'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#2c3e50"/><path d="M50 20 L75 35 V60 L50 80 L25 60 V35 Z" fill="#18bc9c"/><path d="M42 50 L48 56 L58 44" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'''
 
 urlpatterns = [
+    path('', landing, name='landing'),
     path('favicon.ico', lambda r: HttpResponse(FAVICON_SVG, content_type='image/svg+xml')),
     path('static/favicon.ico', lambda r: HttpResponse(FAVICON_SVG, content_type='image/svg+xml')),
     path('admin/', admin.site.urls),

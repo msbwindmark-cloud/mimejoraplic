@@ -2,244 +2,486 @@
 
 {% block title %}{{ doc.title }}{% endblock %}
 
-{% block content %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-white-50 small">{{ user.email }}</span>
-            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
-            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
-        </div>
-    </div>
-</nav>
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+{% endblock %}
 
+{% block content %}
 <div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+    <!-- Back arrow -->
+    <div class="mb-3">
+        <a href="{% url 'core_dashboard' %}" class="text-decoration-none text-muted fw-bold small">
+            <i class="bi bi-arrow-left"></i> Volver al panel de control
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Side: Main contract dossier and signatures -->
+        <div class="col-lg-8">
+            
+            <!-- AI Analysis Dossier (If exists) -->
             {% if analysis %}
-            <div class="card shadow-sm mb-3 {% if analysis.risk_score >= 60 %}border-danger{% elif analysis.risk_score >= 30 %}border-warning{% else %}border-success{% endif %}">
-                <div class="card-header d-flex justify-content-between align-items-center
-                    {% if analysis.risk_score >= 60 %}bg-danger text-white
-                    {% elif analysis.risk_score >= 30 %}bg-warning
-                    {% else %}bg-success text-white{% endif %}">
-                    <h5 class="mb-0"><i class="bi bi-robot"></i> Análisis con IA</h5>
-                    <span class="badge bg-light text-dark fs-6">{{ analysis.risk_score }}/100 riesgo</span>
+            <div class="card card-dossier mb-4 border-start border-5 {% if analysis.risk_score >= 60 %}border-danger{% elif analysis.risk_score >= 30 %}border-warning{% else %}border-success{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fs-5 fw-bold text-dark"><i class="bi bi-robot text-primary"></i> Informe de Auditoría por Inteligencia Artificial</span>
+                    <span class="badge {% if analysis.risk_score >= 60 %}bg-danger{% elif analysis.risk_score >= 30 %}bg-warning text-dark{% else %}bg-success{% endif %} legal-badge">
+                        Riesgo Legal: {{ analysis.risk_score }}/100
+                    </span>
                 </div>
                 <div class="card-body">
-                    <p>{{ analysis.summary }}</p>
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-muted small text-uppercase">Resumen Ejecutivo</h6>
+                        <p class="text-dark mb-0">{{ analysis.summary }}</p>
+                    </div>
+
                     {% if analysis.risky_clauses %}
-                    <h6 class="mt-3">Cláusulas identificadas:</h6>
-                    <ul class="list-group list-group-flush mb-3">
-                        {% for clause in analysis.risky_clauses %}
-                        <li class="list-group-item">
-                            <div class="d-flex justify-content-between">
-                                <strong class="small">{{ clause.clause }}</strong>
-                                <span class="badge {% if clause.risk == 'alto' %}bg-danger{% elif clause.risk == 'medio' %}bg-warning text-dark{% else %}bg-info{% endif %}">
-                                    {{ clause.risk }}
-                                </span>
-                            </div>
-                            <p class="small text-muted mb-0 mt-1">{{ clause.explanation }}</p>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-muted small text-uppercase">Cláusulas de Atención Analizadas</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle table-borderless">
+                                <thead>
+                                    <tr class="table-light small">
+                                        <th class="ps-2">Cláusula</th>
+                                        <th>Nivel de Alerta</th>
+                                        <th>Diagnóstico Legal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for clause in analysis.risky_clauses %}
+                                    <tr class="border-bottom">
+                                        <td class="ps-2 py-2 fw-semibold small" style="max-width: 200px;">{{ clause.clause }}</td>
+                                        <td>
+                                            <span class="badge {% if clause.risk == 'alto' %}bg-danger{% elif clause.risk == 'medio' %}bg-warning text-dark{% else %}bg-info{% endif %} small">
+                                                {{ clause.risk|upper }}
+                                            </span>
+                                        </td>
+                                        <td class="small text-muted py-2">{{ clause.explanation }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                     {% endif %}
+
                     {% if analysis.recommendations %}
-                    <div class="alert alert-info mb-0">
-                        <strong><i class="bi bi-lightbulb"></i> Recomendación:</strong> {{ analysis.recommendations }}
+                    <div class="alert alert-info border-0 mb-0 shadow-sm d-flex gap-2 align-items-center">
+                        <i class="bi bi-info-circle-fill text-info fs-4"></i>
+                        <div>
+                            <strong class="small text-dark">Consejo pericial sugerido:</strong>
+                            <p class="small text-muted mb-0">{{ analysis.recommendations }}</p>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <div class="card shadow-sm mb-3">
+            <!-- Main Document properties -->
+            <div class="card card-dossier mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ doc.title }}</h5>
-                    <span class="badge {% if doc.status == 'SIGNED' %}bg-success{% elif doc.status == 'PENDING' %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                    <span class="fs-5 fw-bold text-dark"><i class="bi bi-file-earmark-pdf text-danger"></i> Documento Base</span>
+                    <span class="badge {% if doc.status == 'SIGNED' %}bg-success-subtle text-success border border-success-subtle{% elif doc.status == 'PENDING' %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-secondary-subtle text-secondary border border-secondary-subtle{% endif %} legal-badge">
                         {{ doc.get_status_display }}
                     </span>
                 </div>
                 <div class="card-body">
-                    <table class="table table-borderless mb-0">
-                        <tr>
-                            <td class="text-muted w-25">SHA-256</td>
-                            <td><code class="small">{{ doc.hash_sha256 }}</code></td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Creado</td>
-                            <td>{{ doc.created_at|date:"d/m/Y H:i" }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Actualizado</td>
-                            <td>{{ doc.updated_at|date:"d/m/Y H:i" }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Archivo</td>
-                            <td>
-                                <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="bi bi-download"></i> Descargar
-                                </a>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="fw-bold mb-1 text-dark">{{ doc.title }}</h4>
+                            <p class="text-muted small mb-0">Subido el {{ doc.created_at|date:"d/m/Y \a \l\a\s H:i" }}</p>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-2 mt-md-0 d-flex gap-2 justify-content-md-end">
+                            <button onclick="togglePdfPreview()" class="btn btn-outline-info rounded-pill shadow-sm" id="btn-pdf-preview">
+                                <i class="bi bi-eye"></i> Vista Previa
+                            </button>
+                            <a href="{{ doc.file.url }}" class="btn btn-outline-primary rounded-pill shadow-sm" target="_blank">
+                                <i class="bi bi-cloud-arrow-down-fill"></i> Descargar Original
+                            </a>
+                        </div>
+                    </div>
 
-            {% if signed %}
-            <div class="card shadow-sm mb-3 border-success">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Documento firmado</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-borderless mb-0">
-                        <tr>
-                            <td class="text-muted w-25">Firmado por</td>
-                            <td class="fw-semibold">{{ signed.signer.email }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Fecha de firma</td>
-                            <td>{{ signed.signed_at|date:"d/m/Y H:i:s" }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">IP</td>
-                            <td><code>{{ signed.ip_address }}</code></td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Dispositivo</td>
-                            <td class="small text-truncate" style="max-width: 400px;">{{ signed.user_agent|truncatechars:80 }}</td>
-                        </tr>
-                        {% if signed.device_fingerprint %}
-                        <tr>
-                            <td class="text-muted">Huella digital</td>
-                            <td><code class="small">{{ signed.device_fingerprint.fingerprint|truncatechars:40 }}</code></td>
-                        </tr>
-                        {% endif %}
-                        {% if signed.blockchain_tx_hash %}
-                        <tr>
-                            <td class="text-muted">Blockchain TX</td>
-                            <td><code class="small">{{ signed.blockchain_tx_hash|truncatechars:40 }}</code></td>
-                        </tr>
-                        {% endif %}
-                        {% if signed.latitude %}
-                        <tr>
-                            <td class="text-muted">GPS</td>
-                            <td>{{ signed.latitude }}, {{ signed.longitude }}
-                                {% if signed.geo_verified %}<span class="badge bg-success">Verificado</span>{% endif %}</td>
-                        </tr>
-                        {% endif %}
-                        {% if signed.verification_video %}
-                        <tr>
-                            <td class="text-muted">Video verificación</td>
-                            <td><a href="{{ signed.verification_video.url }}" class="btn btn-sm btn-outline-info" target="_blank">Ver video</a>
-                                {% if signed.liveness_verified %}<span class="badge bg-success">Liveness OK</span>{% endif %}</td>
-                        </tr>
-                        {% endif %}
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Acciones -->
-            <div class="card shadow-sm mb-3">
-                <div class="card-header"><h5 class="mb-0">Acciones</h5></div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
-                        {% if not signed %}
-                        <a href="{% url 'core_document_sign' doc.id %}" class="btn btn-success">
-                            <i class="bi bi-pen"></i> Firmar documento
-                        </a>
-                        {% endif %}
-                        {% if not analysis %}
-                        <a href="{% url 'core_document_analyze' doc.id %}" class="btn btn-info text-white">
-                            <i class="bi bi-robot"></i> Analizar con IA
-                        </a>
-                        {% endif %}
-                        {% if not trigger %}
-                        <a href="{% url 'core_trigger_create' doc.id %}" class="btn btn-outline-danger">
-                            <i class="bi bi-alarm"></i> Activar Dead Man Switch
-                        </a>
-                        {% endif %}
-                        {% if not doc.geofences.exists %}
-                        <a href="{% url 'core_geofence_create' doc.id %}" class="btn btn-outline-warning">
-                            <i class="bi bi-geo-alt"></i> Crear Geocerca
-                        </a>
-                        {% endif %}
-                        <a href="{% url 'core_witness_create' doc.id %}" class="btn btn-outline-info">
-                            <i class="bi bi-camera-video"></i> Invitar testigo
-                        </a>
+                    <!-- PDF Preview -->
+                    <div id="pdf-preview" style="display:none;margin-top:1rem;border-radius:12px;overflow:hidden;border:1px solid var(--tb-border);">
+                        <div style="background:#1e293b;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="color:white;font-size:0.85rem;"><i class="bi bi-file-earmark-pdf text-danger"></i> Previsualización</span>
+                            <div>
+                                <button onclick="changePdfPage(-1)" class="btn btn-sm btn-outline-light" style="padding:2px 10px;">&larr;</button>
+                                <span id="pdf-page-info" style="color:white;font-size:0.8rem;margin:0 8px;">Página 1</span>
+                                <button onclick="changePdfPage(1)" class="btn btn-sm btn-outline-light" style="padding:2px 10px;">&rarr;</button>
+                            </div>
+                        </div>
+                        <canvas id="pdf-canvas" style="width:100%;background:#f8fafc;"></canvas>
+                    </div>
+                    
+                    <hr class="text-muted opacity-25">
+                    
+                    <div class="row g-2">
+                        <div class="col-sm-4 text-muted small">Evidencia de Integridad (SHA-256):</div>
+                        <div class="col-sm-8"><span class="audit-value">{{ doc.hash_sha256 }}</span></div>
                     </div>
                 </div>
             </div>
 
-            {% if trigger %}
-            <div class="card shadow-sm mb-3 border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-alarm"></i> Dead Man Switch — Activo</h5>
+            <!-- Signature Certificate (If signed) -->
+            {% if signed %}
+            <div class="card card-dossier border-success border-top border-4 mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center bg-success-subtle border-0">
+                    <span class="fw-bold text-success"><i class="bi bi-patch-check-fill text-success fs-5"></i> Acta de Certificación Criptográfica y GPS</span>
+                    <span class="badge bg-success text-white small rounded-pill">Auditoría Aprobada</span>
                 </div>
                 <div class="card-body">
-                    <table class="table table-borderless mb-0">
+                    <div class="row g-4">
+                        <div class="col-md-7">
+                            <table class="table table-sm table-borderless align-middle mb-0">
+                                <tr>
+                                    <td class="text-muted small py-2">Firmante Autorizado:</td>
+                                    <td class="fw-bold py-2 text-dark">{{ signed.signer.email }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted small py-2">Fecha y Hora UTC:</td>
+                                    <td class="py-2">{{ signed.signed_at|date:"d/m/Y H:i:s" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted small py-2">Dirección IP:</td>
+                                    <td class="py-2"><code class="small">{{ signed.ip_address }}</code></td>
+                                </tr>
+                                {% if signed.blockchain_tx_hash %}
+                                <tr>
+                                    <td class="text-muted small py-2">Blockchain TX (Polygon):</td>
+                                    <td class="py-2"><span class="audit-value">{{ signed.blockchain_tx_hash|slice:":30" }}...</span></td>
+                                </tr>
+                                {% endif %}
+                                {% if signed.device_fingerprint %}
+                                <tr>
+                                    <td class="text-muted small py-2">Huella de Dispositivo:</td>
+                                    <td class="py-2"><code class="small">{{ signed.device_fingerprint.fingerprint|slice:":24" }}...</code></td>
+                                </tr>
+                                {% endif %}
+                                {% if signed.verification_video %}
+                                <tr>
+                                    <td class="text-muted small py-2">Prueba de Vida (Face Match):</td>
+                                    <td class="py-2">
+                                        <a href="{{ signed.verification_video.url }}" class="btn btn-sm btn-outline-info rounded-pill" target="_blank"><i class="bi bi-camera-video-fill"></i> Reproducir Video</a>
+                                        {% if signed.liveness_verified %}<span class="badge bg-success-subtle text-success ms-1 small">Liveness OK</span>{% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                        <div class="col-md-5">
+                            {% if signed.latitude %}
+                            <div class="fw-bold text-muted small mb-1"><i class="bi bi-geo-alt-fill text-danger"></i> Ubicación Judicial de la Firma:</div>
+                            <div class="small text-dark mb-1">Coordenadas: <strong>{{ signed.latitude|floatformat:6 }}, {{ signed.longitude|floatformat:6 }}</strong></div>
+                            <div id="mini-map"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Right Side: B2B Action Center and specific options -->
+        <div class="col-lg-4">
+            
+            <!-- Professional Action Hub -->
+            <div class="card card-dossier mb-4">
+                <div class="card-header bg-light">
+                    <span class="mb-0 fw-bold text-dark"><i class="bi bi-wrench-adjustable text-primary"></i> Acciones Disponibles</span>
+                </div>
+                <div class="card-body d-flex flex-column gap-3">
+                    
+                    {% if not signed %}
+                    <div class="action-btn-box">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-pen text-success"></i> Firmar Documento</h6>
+                            <p class="small text-muted mb-0">Proceder a la firma del contrato aplicando seguridad 2FA, GPS y huella del navegador.</p>
+                        </div>
+                        <a href="{% url 'core_document_sign' doc.id %}" class="btn btn-success btn-sm w-100 mt-2 rounded-pill shadow-sm">
+                            Firmar Ahora
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if not analysis %}
+                    <div class="action-btn-box">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-robot text-info"></i> Análisis Legal de Cláusulas</h6>
+                            <p class="small text-muted mb-0">Usa el motor de IA para auditar el contrato y clasificar cláusulas de riesgo o penalización.</p>
+                        </div>
+                        <a href="{% url 'core_document_analyze' doc.id %}" class="btn btn-info text-white btn-sm w-100 mt-2 rounded-pill shadow-sm">
+                            Analizar con IA
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if not trigger %}
+                    <div class="action-btn-box">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-heart-pulse text-danger"></i> Custodia / Testamento Digital</h6>
+                            <p class="small text-muted mb-0">Configura un disparador por inactividad (Dead Man Switch) para enviar o transferir el documento.</p>
+                        </div>
+                        <a href="{% url 'core_trigger_create' doc.id %}" class="btn btn-outline-danger btn-sm w-100 mt-2 rounded-pill shadow-sm">
+                            Configurar Custodia
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if not doc.geofences.exists %}
+                    <div class="action-btn-box">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-geo-alt text-warning"></i> Geocerca de Seguridad (GPS)</h6>
+                            <p class="small text-muted mb-0">Establece un radio físico en metros fuera del cual no se permitirá firmar este documento.</p>
+                        </div>
+                        <a href="{% url 'core_geofence_create' doc.id %}" class="btn btn-outline-warning text-dark btn-sm w-100 mt-2 rounded-pill shadow-sm">
+                            Activar Geocerca GPS
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="action-btn-box">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1"><i class="bi bi-camera-video text-primary"></i> Comparecencia / Testigo</h6>
+                            <p class="small text-muted mb-0">Invita a un notario, abogado o testigo externo a una sala WebRTC en vivo para auditar la firma.</p>
+                        </div>
+                        <a href="{% url 'core_witness_create' doc.id %}" class="btn btn-outline-primary btn-sm w-100 mt-2 rounded-pill shadow-sm">
+                            Invitar Testigo / Notario
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Certificado de Fe Digital (Printable) -->
+            <div class="card card-dossier border-info mb-4 no-print">
+                <div class="card-header bg-info-subtle text-info border-0 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-award-fill"></i> Certificado de Fe Digital</span>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted small mb-2">Genera un certificado oficial imprimible con todos los datos de la firma, ideal para expedientes judiciales.</p>
+                    <button onclick="printCertificate()" class="btn btn-info btn-lg rounded-pill shadow-sm px-4">
+                        <i class="bi bi-printer-fill"></i> Imprimir Certificado
+                    </button>
+                </div>
+            </div>
+
+            <!-- Digital Testament Status -->
+            {% if trigger %}
+            <div class="card card-dossier border-danger mb-4">
+                <div class="card-header bg-danger-subtle text-danger border-0">
+                    <span class="fw-bold"><i class="bi bi-heart-pulse-fill text-danger"></i> Custodia de Testamento Digital</span>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
                         <tr>
-                            <td class="text-muted">Intervalo</td>
-                            <td>Cada <strong>{{ trigger.check_in_interval_days }} días</strong></td>
+                            <td class="text-muted small">Ciclo de Check-in:</td>
+                            <td class="fw-bold text-dark">{{ trigger.check_in_interval_days }} días</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Periodo de gracia</td>
-                            <td>{{ trigger.grace_period_days }} días</td>
+                            <td class="text-muted small">Último Check-in:</td>
+                            <td class="small">{{ trigger.last_check_in|date:"d/m/Y H:i" }}</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Último check-in</td>
-                            <td>{{ trigger.last_check_in|date:"d/m/Y H:i" }}</td>
+                            <td class="text-muted small">Acción Programada:</td>
+                            <td class="small">{{ trigger.get_trigger_action_display }}</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Acción al vencer</td>
-                            <td>{{ trigger.get_trigger_action_display }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Estado</td>
+                            <td class="text-muted small">Estado de Monitoreo:</td>
                             <td>
                                 {% if trigger.triggered_at %}
-                                <span class="badge bg-danger">Activado {{ trigger.triggered_at|date:"d/m/Y" }}</span>
+                                <span class="badge bg-danger">Liberado el {{ trigger.triggered_at|date:"d/m/Y" }}</span>
                                 {% else %}
-                                <span class="badge bg-success">Monitoreando</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Activo / En Guardia</span>
                                 {% endif %}
                             </td>
                         </tr>
                     </table>
-                    <a href="{% url 'core_trigger_checkin' trigger.id %}" class="btn btn-success mt-3">
-                        <i class="bi bi-check-lg"></i> Hacer check-in ahora
+                    <a href="{% url 'core_trigger_checkin' trigger.id %}" class="btn btn-success btn-sm w-100 mt-3 rounded-pill shadow-sm">
+                        <i class="bi bi-heart-fill"></i> Registrar Check-In de Vida
                     </a>
                 </div>
             </div>
             {% endif %}
 
+            <!-- Virtual Hearings Status -->
             {% if doc.witness_sessions.all %}
-            <div class="card shadow-sm mb-3 border-warning">
-                <div class="card-header bg-warning">
-                    <h5 class="mb-0"><i class="bi bi-people"></i> Testigos ({{ doc.witness_sessions.count }})</h5>
+            <div class="card card-dossier border-warning mb-4">
+                <div class="card-header bg-warning-subtle text-warning-emphasis border-0 fw-bold">
+                    <i class="bi bi-people-fill text-warning"></i> Comparecencias WebRTC Activas
                 </div>
-                <div class="card-body">
-                    {% for w in doc.witness_sessions.all %}
-                    <div class="mb-2 pb-2 border-bottom">
-                        <strong>{{ w.witness_name|default:w.witness_email }}</strong>
-                        <span class="badge {% if w.status == 'COMPLETED' %}bg-success{% elif w.status == 'ACTIVE' %}bg-info{% else %}bg-secondary{% endif %}">
-                            {{ w.get_status_display }}
-                        </span>
-                        {% if w.identity_confirmed %}<span class="badge bg-success">Identidad confirmada</span>{% endif %}
-                        <br>
-                        <span class="small text-muted">{{ w.created_at|date:"d/m/Y H:i" }}</span>
-                    </div>
-                    {% endfor %}
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for w in doc.witness_sessions.all %}
+                        <li class="list-group-item py-3 px-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <strong class="text-dark small">{{ w.witness_name|default:w.witness_email }}</strong>
+                                <span class="badge {% if w.status == 'COMPLETED' %}bg-success-subtle text-success{% elif w.status == 'ACTIVE' %}bg-info-subtle text-info{% else %}bg-secondary-subtle text-secondary{% endif %} px-2 py-1 small" style="font-size: 0.65rem;">
+                                    {{ w.get_status_display }}
+                                </span>
+                            </div>
+                            <span class="text-muted small d-block mb-1"><i class="bi bi-envelope"></i> Enlace enviado a: {{ w.witness_email }}</span>
+                            {% if w.identity_confirmed %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle small"><i class="bi bi-patch-check"></i> Identidad Verificada por Videollamada</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
             {% endif %}
 
-            <div class="mt-3">
-                <a href="{% url 'core_dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Volver al dashboard
-                </a>
-            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+<!-- Printable Certificate (hidden unless printing) -->
+<div class="print-area" style="display:none;">
+    <div style="padding:40px 60px;font-family:serif;color:#1a1a2e;">
+        <div style="text-align:center;border-bottom:3px double #1e3c72;padding-bottom:20px;margin-bottom:30px;">
+            <div style="font-size:14px;color:#64748b;letter-spacing:4px;text-transform:uppercase;margin-bottom:5px;">República de España</div>
+            <h1 style="font-size:28px;font-weight:900;color:#1e3c72;margin:5px 0;">Certificado Electrónico de Fe Digital</h1>
+            <div style="font-size:12px;color:#64748b;">Emitido por TrustBridge — Plataforma de Firma Digital con Validez Judicial</div>
+        </div>
+
+        <div style="margin-bottom:25px;">
+            <h2 style="font-size:16px;color:#1e3c72;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">I. IDENTIFICACIÓN DEL DOCUMENTO</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <tr><td style="padding:6px 10px;color:#64748b;width:200px;">Título del Documento</td><td style="padding:6px 10px;font-weight:600;">{{ doc.title }}</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:6px 10px;color:#64748b;">Hash SHA-256</td><td style="padding:6px 10px;font-family:monospace;font-size:11px;">{{ doc.hash_sha256 }}</td></tr>
+                <tr><td style="padding:6px 10px;color:#64748b;">Fecha de Registro</td><td style="padding:6px 10px;font-weight:600;">{{ doc.created_at|date:"d \d\e F \d\e Y \a \l\a\s H:i:s e" }}</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:6px 10px;color:#64748b;">Estado Legal</td><td style="padding:6px 10px;"><span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:4px;">{{ doc.get_status_display }}</span></td></tr>
+            </table>
+        </div>
+
+        {% if signed %}
+        <div style="margin-bottom:25px;">
+            <h2 style="font-size:16px;color:#1e3c72;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">II. DATOS DE LA FIRMA DIGITAL</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <tr><td style="padding:6px 10px;color:#64748b;width:200px;">Firmante</td><td style="padding:6px 10px;font-weight:600;">{{ signed.signer.email }}</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:6px 10px;color:#64748b;">Fecha y Hora (UTC)</td><td style="padding:6px 10px;">{{ signed.signed_at|date:"d/m/Y H:i:s" }}</td></tr>
+                <tr><td style="padding:6px 10px;color:#64748b;">Dirección IP</td><td style="padding:6px 10px;font-family:monospace;">{{ signed.ip_address }}</td></tr>
+                {% if signed.latitude %}
+                <tr style="background:#f8fafc;"><td style="padding:6px 10px;color:#64748b;">Coordenadas GPS</td><td style="padding:6px 10px;font-family:monospace;">{{ signed.latitude|floatformat:6 }}, {{ signed.longitude|floatformat:6 }}</td></tr>
+                {% endif %}
+                {% if signed.blockchain_tx_hash %}
+                <tr><td style="padding:6px 10px;color:#64748b;">Transacción Blockchain</td><td style="padding:6px 10px;font-family:monospace;font-size:11px;">{{ signed.blockchain_tx_hash }}</td></tr>
+                {% endif %}
+                <tr style="background:#f8fafc;"><td style="padding:6px 10px;color:#64748b;">Prueba de Vida (Liveness)</td><td style="padding:6px 10px;">{% if signed.liveness_verified %}<span style="color:#16a34a;font-weight:600;">✓ Verificado ({{ signed.liveness_confidence|floatformat:2 }}% confianza)</span>{% else %}No aplica{% endif %}</td></tr>
+                {% if signed.geo_verified %}
+                <tr><td style="padding:6px 10px;color:#64748b;">Geocerca</td><td style="padding:6px 10px;"><span style="color:#16a34a;font-weight:600;">✓ Verificada — Firma dentro del área permitida</span></td></tr>
+                {% endif %}
+            </table>
+        </div>
+        {% endif %}
+
+        {% if analysis %}
+        <div style="margin-bottom:25px;">
+            <h2 style="font-size:16px;color:#1e3c72;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">III. ANÁLISIS DE INTELIGENCIA ARTIFICIAL</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <tr><td style="padding:6px 10px;color:#64748b;width:200px;">Risk Score</td><td style="padding:6px 10px;font-weight:600;">{{ analysis.risk_score }}/100</td></tr>
+                <tr style="background:#f8fafc;"><td style="padding:6px 10px;color:#64748b;">Resumen</td><td style="padding:6px 10px;">{{ analysis.summary }}</td></tr>
+            </table>
+        </div>
+        {% endif %}
+
+        <div style="margin-top:40px;padding-top:20px;border-top:2px solid #1e3c72;text-align:center;font-size:11px;color:#64748b;">
+            <p style="margin:2px 0;">Este certificado es una representación digital de los datos de firma almacenados en la plataforma TrustBridge.</p>
+            <p style="margin:2px 0;">Para verificar la autenticidad, visite <strong>https://trustbridge.es/verify/</strong> e introduzca el hash SHA-256 del documento.</p>
+            <p style="margin:5px 0;color:#1e3c72;font-weight:600;">TrustBridge — Firma Digital Segura con Validez Judicial</p>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+// PDF Preview
+var pdfDoc = null;
+var pdfPageNum = 1;
+var pdfRendering = false;
+
+function togglePdfPreview() {
+    var container = document.getElementById('pdf-preview');
+    var btn = document.getElementById('btn-pdf-preview');
+    if (container.style.display !== 'none') {
+        container.style.display = 'none';
+        btn.innerHTML = '<i class="bi bi-eye"></i> Vista Previa';
+        return;
+    }
+    container.style.display = 'block';
+    btn.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar';
+    if (!pdfDoc) loadPdf();
+}
+
+function loadPdf() {
+    var url = "{{ doc.file.url }}";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.getDocument(url).promise.then(function(doc) {
+        pdfDoc = doc;
+        pdfPageNum = 1;
+        renderPdfPage();
+    }).catch(function() {
+        document.getElementById('pdf-canvas').style.display = 'none';
+        document.querySelector('#pdf-preview > div:last-child').innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-exclamation-triangle fs-2"></i><p>No se pudo previsualizar el documento. <a href="' + url + '" target="_blank">Descargar original</a></p></div>';
+    });
+}
+
+function renderPdfPage() {
+    if (!pdfDoc || pdfRendering) return;
+    pdfRendering = true;
+    pdfDoc.getPage(pdfPageNum).then(function(page) {
+        var canvas = document.getElementById('pdf-canvas');
+        var ctx = canvas.getContext('2d');
+        var viewport = page.getViewport({ scale: 1.5 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
+            pdfRendering = false;
+            document.getElementById('pdf-page-info').textContent = 'Página ' + pdfPageNum + ' de ' + pdfDoc.numPages;
+        });
+    });
+}
+
+function changePdfPage(delta) {
+    if (!pdfDoc) return;
+    var newPage = pdfPageNum + delta;
+    if (newPage < 1 || newPage > pdfDoc.numPages) return;
+    pdfPageNum = newPage;
+    renderPdfPage();
+}
+
+function printCertificate() {
+    var printArea = document.querySelector('.print-area');
+    if (!printArea) return;
+    printArea.style.display = 'block';
+    window.print();
+    printArea.style.display = 'none';
+}
+</script>
+{% if signed and signed.latitude %}
+<!-- Leaflet JS for mini map -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lat = {{ signed.latitude|stringformat:".6f" }};
+    const lng = {{ signed.longitude|stringformat:".6f" }};
+    
+    // Set up Leaflet mini-map
+    const miniMap = L.map('mini-map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView([lat, lng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(miniMap);
+
+    const marker = L.marker([lat, lng]).addTo(miniMap);
+    marker.bindPopup("<strong>Firma Geolocalizada</strong>").openPopup();
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -1,75 +1,87 @@
 {% extends "base.html" %}
 
-{% block title %}Dead Man Switch — {{ doc.title }}{% endblock %}
+{% block title %}Custodia Criptográfica y Testamento Digital — {{ doc.title }}{% endblock %}
+
+{% block extra_head %}{% endblock %}
+
+{% block navbar_extra %}
+<a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-light btn-sm rounded-pill"><i class="bi bi-file-earmark-pdf"></i> Volver al Documento</a>
+{% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-white-50 small">{{ user.email }}</span>
-            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
-            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
-        </div>
-    </div>
-</nav>
 
-<div class="container py-4">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm mb-3 border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-alarm"></i> Configurar Dead Man Switch</h5>
+        <div class="col-lg-8">
+            <div class="card card-premium shadow mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-heart-pulse-fill text-danger"></i> Configurar Testamento Digital y Custodia Condicional</h4>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-warning">
-                        <strong><i class="bi bi-exclamation-triangle"></i> ¿Qué es esto?</strong>
-                        <p class="mb-0 mt-1">El Dead Man Switch protege tu contrato: si dejas de hacer check-in por el periodo configurado, el sistema ejecutará la acción que elijas automáticamente. Ideal para testamentos, herencias, o acuerdos condicionales.</p>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning border-warning shadow-sm mb-4">
+                        <div class="d-flex gap-2">
+                            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+                            <div>
+                                <strong class="text-dark">Monitoreo de Actividad de Vida (Dead Man Switch)</strong>
+                                <p class="small text-muted mb-0">Esta función permite custodiar activos digitales de alto valor (como criptomonedas, credenciales, actas societarias o testamentos privados). Si el propietario no realiza un "Check-in de Vida" regular en la plataforma, la custodia se abrirá automáticamente para la parte designada.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label">Documento</label>
-                            <input type="text" class="form-control" value="{{ doc.title }}" disabled>
+                            <label class="form-label fw-bold">Documento Custodiado</label>
+                            <input type="text" class="form-control form-control-lg bg-light" value="{{ doc.title }}" disabled>
                         </div>
+                        
                         <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Intervalo de check-in (días)</label>
-                                <input type="number" name="interval_days" value="30" min="1" max="365" class="form-control form-control-lg" required>
-                                <div class="form-text">Cada cuántos días debes hacer check-in</div>
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-bold">Intervalo de Check-in (días)</label>
+                                <div class="input-group">
+                                    <input type="number" name="interval_days" value="30" min="1" max="365" class="form-control form-control-lg" required>
+                                    <span class="input-group-text">días</span>
+                                </div>
+                                <div class="form-text">Frecuencia exigida para confirmar tu actividad.</div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Periodo de gracia (días)</label>
-                                <input type="number" name="grace_days" value="7" min="0" max="90" class="form-control form-control-lg" required>
-                                <div class="form-text">Días extra después del vencimiento</div>
+                                <label class="form-label fw-bold">Periodo de Gracia (días)</label>
+                                <div class="input-group">
+                                    <input type="number" name="grace_days" value="7" min="0" max="90" class="form-control form-control-lg" required>
+                                    <span class="input-group-text">días</span>
+                                </div>
+                                <div class="form-text">Días de cortesía antes de ejecutar la acción.</div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Acción al vencer</label>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Acción Judicial en Vencimiento</label>
                             <select name="trigger_action" class="form-select form-select-lg">
-                                <option value="NOTIFY">Notificarme por correo</option>
-                                <option value="TRANSFER">Transferir documento (próximamente)</option>
-                                <option value="PUBLISH">Publicar documento (próximamente)</option>
+                                <option value="NOTIFY">Notificar y liberar por Correo Electrónico</option>
+                                <option value="TRANSFER">Transferir Derechos de Acceso (Blockchain)</option>
+                                <option value="PUBLISH">Hacer público en el Portal de Auditoría Pericial</option>
                             </select>
+                            <div class="form-text">Qué acción tomará la plataforma una vez expirado el plazo sin actividad.</div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-danger btn-lg flex-fill">
-                                <i class="bi bi-shield-check"></i> Activar Dead Man Switch
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-secondary px-4 py-2"><i class="bi bi-x-circle"></i> Cancelar</a>
+                            <button type="submit" class="btn btn-premium px-4 py-2">
+                                <i class="bi bi-shield-check"></i> Activar Protocolo de Custodia
                             </button>
-                            <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <div class="card bg-light">
-                <div class="card-body">
-                    <h6><i class="bi bi-info-circle"></i> Ejemplos de uso</h6>
-                    <ul class="small text-muted mb-0">
-                        <li><strong>Testamento digital:</strong> Si no haces check-in en 90 días, se notifica a tus herederos</li>
-                        <li><strong>Contrato de socio:</strong> Si un fundador desaparece, su participación se transfiere automáticamente</li>
-                        <li><strong>Acuerdo condicional:</strong> El contrato se activa solo si no hay check-in por X días</li>
+            <!-- B2B Contextual cases -->
+            <div class="card mt-4 border-0 shadow-sm" style="border-radius: 12px; overflow:hidden;">
+                <div class="card-body bg-white border-top border-5 border-danger">
+                    <h6 class="fw-bold text-dark"><i class="bi bi-lightbulb-fill text-warning"></i> Casos de Uso Empresariales</h6>
+                    <ul class="small text-muted mb-0 ps-3">
+                        <li class="mb-2"><strong>Testamento Digital Privado:</strong> Libera la clave de cifrado de tu herencia digital a tus familiares de forma automatizada y legal.</li>
+                        <li class="mb-2"><strong>Cláusulas Societarias Especiales:</strong> Traspaso preventivo de administración societaria en caso de ausencia prolongada o incapacidad de un socio fundador.</li>
+                        <li class="mb-0"><strong>Fe Pública Condicionada:</strong> Custodia notarial de documentos que deben liberarse solo ante el fallecimiento o silencio calificado del testador.</li>
                     </ul>
                 </div>
             </div>

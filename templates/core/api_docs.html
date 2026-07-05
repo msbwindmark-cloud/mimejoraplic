@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}API / Integración - TrustBridge{% endblock %}
+
+{% block extra_head %}
+<style>
+  .api-hero {
+    background: linear-gradient(135deg, #0b1120 0%, #1e3c72 50%, #2a5298 100%);
+    border-radius: 16px;
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+  }
+  .endpoint-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: white;
+    transition: box-shadow 0.2s;
+  }
+  [data-theme="dark"] .endpoint-card {
+    background: var(--tb-card-bg);
+    border-color: var(--tb-border);
+  }
+  .endpoint-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+  }
+  .http-method {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    margin-right: 0.5rem;
+  }
+  .method-get { background: #dbeafe; color: #1d4ed8; }
+  .method-post { background: #dcfce7; color: #16a34a; }
+  .code-block {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  [data-theme="dark"] .code-block {
+    background: #0a0f1a;
+  }
+  .integ-option {
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s;
+    background: white;
+    height: 100%;
+  }
+  [data-theme="dark"] .integ-option {
+    background: var(--tb-card-bg);
+    border-color: var(--tb-border);
+  }
+  .integ-option:hover {
+    border-color: var(--tb-accent);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,210,255,0.1);
+  }
+  .integ-option .icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .badge-api {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+  }
+  @media (max-width: 767.98px) {
+    .api-hero { padding: 1.5rem; }
+    .api-hero h1 { font-size: 1.4rem; }
+    .endpoint-card { padding: 1rem; }
+    .code-block { font-size: 0.75rem; padding: 0.75rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="container py-4">
+  <div class="api-hero">
+    <span class="badge bg-info text-dark fw-bold mb-2"><i class="bi bi-code-slash"></i> PARA DESARROLLADORES</span>
+    <h1 class="fw-bold mb-2">API de Integración TrustBridge</h1>
+    <p class="lead text-white-50 mb-0">Añade firma digital con validez judicial a tu aplicación en minutos. GPS, blockchain y análisis IA mediante API REST.</p>
+  </div>
+
+  <!-- Business value proposition (for decision makers) -->
+  <div class="alert alert-info border-0 rounded-4 mb-4" style="background: linear-gradient(135deg, #ecfeff, #e0f2fe);">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <h5 class="fw-bold text-dark mb-2"><i class="bi bi-lightbulb-fill text-warning me-1"></i> ¿Tienes tu propia app? TrustBridge se integra, no la reemplaza</h5>
+        <p class="small text-muted mb-0">Tu equipo sigue usando su CRM / software actual. Nosotros añadimos una <strong>capa de firma con validez judicial</strong> que se conecta con lo que ya tenéis. La integración la hacemos nosotros — tu equipo no toca código. En 24h tus clientes firman con GPS, blockchain y certificado pericial desde tu propia aplicación.</p>
+      </div>
+      <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+        <span class="badge bg-white text-dark border px-3 py-2 me-2 shadow-sm"><i class="bi bi-check-circle-fill text-success"></i> Sin reemplazar tu app</span>
+        <span class="badge bg-white text-dark border px-3 py-2 shadow-sm mt-1"><i class="bi bi-clock-history text-primary"></i> Integración en 24h</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab toggle for technical / business view -->
+  <ul class="nav nav-pills mb-4" id="viewTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="business-view-tab" data-bs-toggle="tab" data-bs-target="#business-view" type="button" role="tab">
+        <i class="bi bi-building"></i> Para directivos
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="technical-view-tab" data-bs-toggle="tab" data-bs-target="#technical-view" type="button" role="tab">
+        <i class="bi bi-code-slash"></i> Documentación técnica
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <!-- BUSINESS VIEW (for decision makers) -->
+    <div class="tab-pane fade show active" id="business-view" role="tabpanel">
+      <div class="row g-4 mb-4">
+        <div class="col-md-6">
+          <div class="card card-section h-100">
+            <div class="card-header"><i class="bi bi-phone text-primary"></i> Tu app sigue funcionando igual</div>
+            <div class="card-body">
+              <p class="small text-muted">TrustBridge no toca tu interfaz, tu lógica de negocio ni tu base de datos. Solo añadimos un módulo de firma que tus usuarios usan desde dentro de tu aplicación.</p>
+              <ul class="small text-muted mb-0">
+                <li>No cambias tu CRM</li>
+                <li>No migras datos</li>
+                <li>No formas a tu equipo</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-section h-100">
+            <div class="card-header"><i class="bi bi-tools text-warning"></i> Nosotros hacemos la integración</div>
+            <div class="card-body">
+              <p class="small text-muted">Nuestro equipo técnico conecta TrustBridge con tu backend. No necesitas programadores internos ni dedicar recursos.</p>
+              <ul class="small text-muted mb-0">
+                <li>Te damos credenciales de API</li>
+                <li>Te guiamos paso a paso</li>
+                <li>Soporte directo por email / chat</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-section h-100">
+            <div class="card-header"><i class="bi bi-shield-check text-success"></i> Lo que ganas al integrarlo</div>
+            <div class="card-body">
+              <ul class="small mb-0">
+                <li><strong>Validez judicial:</strong> cada firma tiene GPS + blockchain</li>
+                <li><strong>Certificado imprimible:</strong> tus clientes lo pueden presentar en juicio</li>
+                <li><strong>Diferenciación B2B:</strong> eres la única inmobiliaria/notaría que ofrece firma blindada</li>
+                <li><strong>Sin mantenimiento:</strong> nosotros actualizamos la seguridad</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card card-section h-100">
+            <div class="card-header"><i class="bi bi-clock text-info"></i> Tiempos y próximos pasos</div>
+            <div class="card-body">
+              <ol class="small mb-0">
+                <li><strong>Día 1:</strong> Solicitas API Key desde el formulario</li>
+                <li><strong>Día 1:</strong> Te enviamos credenciales y documentación</li>
+                <li><strong>Día 2:</strong> Nuestro equipo configura la integración contigo</li>
+                <li><strong>Día 3:</strong> Pruebas y puesta en marcha</li>
+              </ol>
+              <a href="/#contacto" class="btn btn-premium btn-sm rounded-pill mt-3"><i class="bi bi-envelope-fill"></i> Solicitar integración</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECHNICAL VIEW (for developers) -->
+    <div class="tab-pane fade" id="technical-view" role="tabpanel">
+
+  <!-- How it works for developers -->
+  <div class="row g-4 mb-5">
+    <div class="col-md-4">
+      <div class="integ-option">
+        <div class="icon text-primary"><i class="bi bi-key-fill"></i></div>
+        <h5 class="fw-bold">1. Obtén tu API Key</h5>
+        <p class="small text-muted mb-0">Te entregamos una clave única por cliente. Cada firma queda vinculada a tu cuenta.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="integ-option">
+        <div class="icon text-success"><i class="bi bi bi-arrow-repeat"></i></div>
+        <h5 class="fw-bold">2. Llama a la API</h5>
+        <p class="small text-muted mb-0">Desde tu backend, envías el documento y el firmante. TrustBridge añade GPS + hash + análisis.</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="integ-option">
+        <div class="icon text-warning"><i class="bi bi-patch-check-fill"></i></div>
+        <h5 class="fw-bold">3. Verificación pública</h5>
+        <p class="small text-muted mb-0">Cualquier juez o perito verifica el documento con el hash desde la página de Auditoría Pericial.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Endpoints -->
+  <h4 class="fw-bold mb-3"><i class="bi bi-plug-fill text-primary"></i> Endpoints REST</h4>
+
+  <div class="endpoint-card">
+    <div><span class="http-method method-post">POST</span> <code class="fw-bold">/api/sign</code> <span class="badge bg-secondary badge-api">Requiere API Key</span></div>
+    <p class="small text-muted mt-2 mb-2">Firma un documento con geolocalización GPS y registro blockchain.</p>
+    <div class="code-block">{
+  "document_id": "uuid-del-documento",
+  "signer_email": "cliente@ejemplo.com",
+  "latitude": 40.416775,
+  "longitude": -3.703790,
+  "liveness_check": true
+}</div>
+    <div class="small text-muted mt-2"><strong>Respuesta:</strong> hash SHA-256, tx_hash blockchain, certificado descargable.</div>
+  </div>
+
+  <div class="endpoint-card">
+    <div><span class="http-method method-get">GET</span> <code class="fw-bold">/api/verify/{hash}</code> <span class="badge bg-secondary badge-api">Público</span></div>
+    <p class="small text-muted mt-2 mb-2">Verifica la autenticidad de un documento firmado. No requiere autenticación.</p>
+    <div class="code-block">GET /api/verify/3f7a8b2c1d9e0f4a5b6c7d8e9f0a1b2c3d4e5f6a</div>
+    <div class="small text-muted mt-2"><strong>Respuesta:</strong> estado, fecha de firma, coordenadas GPS, hash blockchain, firmante.</div>
+  </div>
+
+  <div class="endpoint-card">
+    <div><span class="http-method method-post">POST</span> <code class="fw-bold">/api/analyze</code> <span class="badge bg-secondary badge-api">Requiere API Key</span></div>
+    <p class="small text-muted mt-2 mb-2">Analiza cláusulas de un contrato con IA y devuelve risk score y recomendaciones.</p>
+    <div class="code-block">{
+  "document_id": "uuid-del-documento",
+  "language": "es"
+}</div>
+    <div class="small text-muted mt-2"><strong>Respuesta:</strong> risk_score (0-100), cláusulas peligrosas, recomendaciones legales.</div>
+  </div>
+
+  <div class="endpoint-card">
+    <div><span class="http-method method-post">POST</span> <code class="fw-bold">/api/geofence</code> <span class="badge bg-secondary badge-api">Requiere API Key</span></div>
+    <p class="small text-muted mt-2 mb-2">Crea una geocerca de protección. La firma solo es válida si el firmante está dentro del área.</p>
+    <div class="code-block">{
+  "document_id": "uuid-del-documento",
+  "latitude": 40.416775,
+  "longitude": -3.703790,
+  "radius_meters": 100
+}</div>
+    <div class="small text-muted mt-2"><strong>Respuesta:</strong> geofence_id, estado de protección activa.</div>
+  </div>
+
+  <!-- Code Examples -->
+  <h4 class="fw-bold mb-3 mt-4"><i class="bi bi-terminal-fill text-success"></i> Ejemplos de código</h4>
+
+  <ul class="nav nav-tabs" id="codeTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="curl-tab" data-bs-toggle="tab" data-bs-target="#curl" type="button" role="tab">cURL</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="python-tab" data-bs-toggle="tab" data-bs-target="#python" type="button" role="tab">Python</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="js-tab" data-bs-toggle="tab" data-bs-target="#js" type="button" role="tab">JavaScript</button>
+    </li>
+  </ul>
+  <div class="tab-content mt-3 mb-5">
+    <div class="tab-pane fade show active" id="curl" role="tabpanel">
+      <div class="code-block">curl -X POST https://trustbridge.es/api/sign \
+  -H "Authorization: Bearer TU_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "document_id": "abc-123",
+    "signer_email": "cliente@ejemplo.com",
+    "latitude": 40.416775,
+    "longitude": -3.703790,
+    "liveness_check": true
+  }'</div>
+    </div>
+    <div class="tab-pane fade" id="python" role="tabpanel">
+      <div class="code-block">import requests
+
+API_KEY = "tu-api-key"
+url = "https://trustbridge.es/api/sign"
+headers = {"Authorization": f"Bearer {API_KEY}"}
+data = {
+    "document_id": "abc-123",
+    "signer_email": "cliente@ejemplo.com",
+    "latitude": 40.416775,
+    "longitude": -3.703790,
+    "liveness_check": True
+}
+resp = requests.post(url, json=data, headers=headers)
+print(resp.json())
+# { "hash": "3f7a...", "tx_hash": "0x...", "status": "SIGNED" }</div>
+    </div>
+    <div class="tab-pane fade" id="js" role="tabpanel">
+      <div class="code-block">const API_KEY = "tu-api-key";
+
+fetch("https://trustbridge.es/api/sign", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${API_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    document_id: "abc-123",
+    signer_email: "cliente@ejemplo.com",
+    latitude: 40.416775,
+    longitude: -3.703790,
+    liveness_check: true
+  })
+})
+.then(r => r.json())
+.then(data => console.log(data));
+// { hash: "3f7a...", tx_hash: "0x...", status: "SIGNED" }</div>
+    </div>
+  </div>
+
+  <!-- Integración técnica -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card card-section h-100">
+        <div class="card-header"><i class="bi bi-box-arrow-in-right text-primary"></i> Integración vía iFrame</div>
+        <div class="card-body">
+          <p class="small text-muted">Inserta el firmador TrustBridge directamente en tu aplicación. El firmante ve la interfaz de firma sin salir de tu web.</p>
+          <div class="code-block">&lt;iframe src="https://trustbridge.es/embed/sign?token=TOKEN_UNICO"
+  width="100%" height="600" frameborder="0"
+  allow="geolocation; camera"&gt;
+&lt;/iframe&gt;</div>
+          <ul class="small text-muted mt-2 mb-0">
+            <li>Solicita permisos de geolocalización al usuario</li>
+            <li>Captura liveness con la cámara (opcional)</li>
+            <li>Callback vía postMessage cuando la firma se completa</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card card-section h-100">
+        <div class="card-header"><i class="bi bi-shield-check text-success"></i> Auditoría Pericial Pública</div>
+        <div class="card-body">
+          <p class="small text-muted">Cada documento firmado tiene un hash SHA-256 público. Cualquier juez, perito o cliente puede verificarlo sin cuenta.</p>
+          <div class="code-block">https://trustbridge.es/verify/3f7a8b2c1d9e0f...</div>
+          <ul class="small text-muted mt-2 mb-0">
+            <li>No requiere login</li>
+            <li>Muestra coordenadas GPS + fecha + firmante</li>
+            <li>Certificado electrónico imprimible con validez judicial</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+  <!-- Contact -->
+  <div class="text-center py-4">
+    <h4 class="fw-bold">¿Quieres integrar TrustBridge?</h4>
+    <p class="text-muted">Te damos acceso a la API y documentación técnica en 24h.</p>
+    <a href="/#contacto" class="btn btn-premium btn-lg rounded-pill px-5"><i class="bi bi-envelope-fill"></i> Solicitar API Key</a>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var triggerTabList = [].slice.call(document.querySelectorAll('#codeTabs button'));
+    triggerTabList.forEach(function (el) {
+      el.addEventListener('click', function (event) {
+        event.preventDefault();
+        var tab = new bootstrap.Tab(el);
+        tab.show();
+      });
+    });
+
+    // Handle view toggle tabs
+    var viewTabs = [].slice.call(document.querySelectorAll('#viewTabs button'));
+    viewTabs.forEach(function (el) {
+      el.addEventListener('click', function (event) {
+        event.preventDefault();
+        var tab = new bootstrap.Tab(el);
+        tab.show();
+      });
+    });
+  });
+</script>
+{% endblock %}

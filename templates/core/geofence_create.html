@@ -2,63 +2,85 @@
 
 {% block title %}Geocerca — {{ doc.title }}{% endblock %}
 
-{% block content %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-white-50 small">{{ user.email }}</span>
-            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
-            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
-        </div>
-    </div>
-</nav>
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+    #geofence-map { height: 300px; border-radius: 10px; border: 1.5px solid #cbd5e1; margin-bottom: 1rem; }
+</style>
+{% endblock %}
 
-<div class="container py-4">
+{% block navbar_extra %}
+<a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-light btn-sm rounded-pill"><i class="bi bi-file-earmark-pdf"></i> Volver al Documento</a>
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm mb-3 border-warning">
-                <div class="card-header bg-warning">
-                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Crear Geocerca</h5>
+        <div class="col-lg-8">
+            <div class="card card-premium shadow">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-geo-alt-fill text-warning"></i> Restringir Firma con Geocerca Satelital</h4>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <strong>¿Qué es esto?</strong> La geocerca restringe la firma de este documento a una ubicación GPS específica. El firmante solo podrá firmar si está físicamente en el lugar autorizado.
+                <div class="card-body p-4">
+                    <div class="alert alert-info border-info shadow-sm mb-4">
+                        <div class="d-flex gap-2">
+                            <i class="bi bi-info-circle-fill text-info fs-4"></i>
+                            <div>
+                                <strong class="text-dark">¿Cómo funciona el perímetro de seguridad?</strong>
+                                <p class="small text-muted mb-0">La geocerca define una zona geográfica específica. El firmante deberá otorgar permisos de localización en su dispositivo y encontrarse físicamente dentro de este perímetro para poder completar el sellado criptográfico del contrato.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label">Documento</label>
-                            <input type="text" class="form-control" value="{{ doc.title }}" disabled>
+                            <label class="form-label fw-bold">Documento Vinculado</label>
+                            <input type="text" class="form-control form-control-lg bg-light" value="{{ doc.title }}" disabled>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Nombre de la ubicación</label>
-                            <input type="text" name="name" class="form-control form-control-lg" value="Ubicación permitida" required>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Nombre descriptivo de la zona</label>
+                            <input type="text" name="name" class="form-control form-control-lg" value="Oficina Inmobiliaria Principal" placeholder="Ej. Notaría Gómez, Inmueble Calle Mayor 12..." required>
                         </div>
+
+                        <!-- Interactive Map Selector -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-map"></i> Ubicación en el Mapa (Haz clic para situar)</span>
+                                <button type="button" id="getLocationBtn" class="btn btn-sm btn-outline-primary" onclick="getLocation()">
+                                    <i class="bi bi-crosshair"></i> Detectar mi ubicación actual
+                                </button>
+                            </label>
+                            <div id="geofence-map"></div>
+                        </div>
+
                         <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Latitud</label>
-                                <input type="number" name="latitude" id="latInput" step="any" class="form-control form-control-lg" required>
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-bold">Latitud</label>
+                                <input type="number" name="latitude" id="latInput" step="any" class="form-control form-control-lg" placeholder="40.416775" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Longitud</label>
-                                <input type="number" name="longitude" id="lonInput" step="any" class="form-control form-control-lg" required>
+                                <label class="form-label fw-bold">Longitud</label>
+                                <input type="number" name="longitude" id="lonInput" step="any" class="form-control form-control-lg" placeholder="-3.703790" required>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Radio de tolerancia (metros)</label>
-                            <input type="number" name="radius_meters" value="100" min="10" max="10000" class="form-control form-control-lg">
-                            <div class="form-text">Distancia máxima desde el punto exacto</div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Radio de tolerancia (metros)</label>
+                            <div class="input-group">
+                                <input type="number" name="radius_meters" id="radiusInput" value="100" min="10" max="10000" class="form-control form-control-lg" required>
+                                <span class="input-group-text">metros</span>
+                            </div>
+                            <div class="form-text">Distancia permitida a la redonda desde el centro seleccionado.</div>
                         </div>
-                        <button type="button" id="getLocationBtn" class="btn btn-outline-primary mb-3" onclick="getLocation()">
-                            <i class="bi bi-crosshair"></i> Usar mi ubicación actual
-                        </button>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-warning btn-lg flex-fill">
-                                <i class="bi bi-geo-alt-fill"></i> Crear Geocerca
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-secondary px-4 py-2"><i class="bi bi-x-circle"></i> Cancelar</a>
+                            <button type="submit" class="btn btn-premium px-4 py-2">
+                                <i class="bi bi-geo-alt-fill text-warning"></i> Establecer Perímetro GPS
                             </button>
-                            <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
                         </div>
                     </form>
                 </div>
@@ -69,7 +91,88 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- Leaflet JS for Map -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Default: Madrid
+    let defaultLat = 40.416775;
+    let defaultLon = -3.703790;
+    
+    // Initialize map
+    const map = L.map('geofence-map').setView([defaultLat, defaultLon], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    let marker;
+    let circle;
+
+    function updateMarkerAndCircle(lat, lon, radius) {
+        if (marker) {
+            marker.setLatLng([lat, lon]);
+        } else {
+            marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+            marker.on('dragend', function(e) {
+                const position = marker.getLatLng();
+                document.getElementById('latInput').value = position.lat.toFixed(6);
+                document.getElementById('lonInput').value = position.lng.toFixed(6);
+                updateMarkerAndCircle(position.lat, position.lng, document.getElementById('radiusInput').value);
+            });
+        }
+        
+        if (circle) {
+            circle.setLatLng([lat, lon]);
+            circle.setRadius(radius);
+        } else {
+            circle = L.circle([lat, lon], {
+                color: '#f59e0b',
+                fillColor: '#f59e0b',
+                fillOpacity: 0.15,
+                radius: radius
+            }).addTo(map);
+        }
+    }
+
+    // Handle map click
+    map.on('click', function(e) {
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
+        document.getElementById('latInput').value = lat.toFixed(6);
+        document.getElementById('lonInput').value = lon.toFixed(6);
+        updateMarkerAndCircle(lat, lon, parseInt(document.getElementById('radiusInput').value));
+    });
+
+    // Handle manual input changes
+    document.getElementById('latInput').addEventListener('input', function() {
+        const lat = parseFloat(this.value);
+        const lon = parseFloat(document.getElementById('lonInput').value);
+        if (!isNaN(lat) && !isNaN(lon)) {
+            updateMarkerAndCircle(lat, lon, parseInt(document.getElementById('radiusInput').value));
+            map.panTo([lat, lon]);
+        }
+    });
+
+    document.getElementById('lonInput').addEventListener('input', function() {
+        const lat = parseFloat(document.getElementById('latInput').value);
+        const lon = parseFloat(this.value);
+        if (!isNaN(lat) && !isNaN(lon)) {
+            updateMarkerAndCircle(lat, lon, parseInt(document.getElementById('radiusInput').value));
+            map.panTo([lat, lon]);
+        }
+    });
+
+    document.getElementById('radiusInput').addEventListener('input', function() {
+        const lat = parseFloat(document.getElementById('latInput').value);
+        const lon = parseFloat(document.getElementById('lonInput').value);
+        const radius = parseInt(this.value);
+        if (!isNaN(lat) && !isNaN(lon) && !isNaN(radius)) {
+            updateMarkerAndCircle(lat, lon, radius);
+        }
+    });
+});
+
 function getLocation() {
     if (!navigator.geolocation) {
         Swal.fire('Error', 'Tu navegador no soporta geolocalización.', 'error');
@@ -77,12 +180,20 @@ function getLocation() {
     }
     navigator.geolocation.getCurrentPosition(
         function(pos) {
-            document.getElementById('latInput').value = pos.coords.latitude;
-            document.getElementById('lonInput').value = pos.coords.longitude;
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            document.getElementById('latInput').value = lat.toFixed(6);
+            document.getElementById('lonInput').value = lon.toFixed(6);
+            
+            // Trigger input events to update Leaflet marker
+            const event = new Event('input');
+            document.getElementById('latInput').dispatchEvent(event);
+            document.getElementById('lonInput').dispatchEvent(event);
+            
             Swal.fire({
                 icon: 'success',
                 title: 'Ubicación capturada',
-                text: `Lat: ${pos.coords.latitude.toFixed(6)}, Lon: ${pos.coords.longitude.toFixed(6)}`,
+                text: `Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}`,
                 timer: 2000,
                 showConfirmButton: false
             });

@@ -1,31 +1,70 @@
 {% extends "base.html" %}
 
-{% block title %}Verificación Judicial{% endblock %}
+{% block title %}Auditoría Pericial y Evidencia Judicial{% endblock %}
+
+{% block extra_head %}
+<style>
+    @media print {
+        nav, .premium-navbar, .btn, form, .input-group, .actions-print-btn, .mb-3 {
+            display: none !important;
+        }
+        body {
+            background-color: white !important;
+            font-size: 10pt;
+            color: #000;
+        }
+        .card-audit, .card-dossier {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+        .card-header {
+            background-color: #f1f5f9 !important;
+            color: #000 !important;
+            border-bottom: 1px solid #ddd !important;
+        }
+        .audit-value {
+            border: none !important;
+            background: none !important;
+            padding: 0 !important;
+        }
+        .certificate-seal {
+            border: 3px double #000 !important;
+            color: #000 !important;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-dark bg-primary shadow mb-4">
+<!-- Premium Header Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark premium-navbar shadow-sm mb-4">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="/">trustbridge</a>
-        <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+            <i class="bi bi-shield-shaded text-info fs-3"></i>
+            <span>TRUSTBRIDGE <span class="fs-7 badge bg-info text-dark ms-1">Auditoría</span></span>
+        </a>
+        <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm rounded-pill"><i class="bi bi-speedometer2"></i> Volver al Panel</a>
     </div>
 </nav>
 
-<div class="container">
+<div class="container py-2">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> Panel de Verificación Judicial</h5>
+        <div class="col-lg-8">
+            
+            <!-- Search portal card -->
+            <div class="card card-audit mb-4">
+                <div class="card-header bg-light border-0 py-3">
+                    <span class="fw-bold text-dark"><i class="bi bi-search text-primary"></i> Consultar Evidencia Judicial</span>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Ingresa el hash SHA-256 o el ID del documento para verificar su autenticidad.</p>
+                    <p class="text-muted small">Cualquier perito, juez o parte interesada puede ingresar el **Hash SHA-256** o el **ID único del contrato** para verificar al instante la integridad y autenticidad del acuerdo en nuestra red descentralizada.</p>
                     <form method="get" action="{% url 'core_verify_document' %}">
-                        <div class="input-group input-group-lg">
-                            <input type="text" name="hash" class="form-control"
-                                   placeholder="Hash SHA-256 o ID del documento"
+                        <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border">
+                            <input type="text" name="hash" class="form-control border-0 px-4"
+                                   placeholder="Introduce el Hash SHA-256 o ID del documento..."
                                    value="{{ hash_query }}">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-search"></i> Verificar
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-shield-check"></i> Verificar Evidencia
                             </button>
                         </div>
                     </form>
@@ -33,123 +72,133 @@
             </div>
 
             {% if hash_query and not doc %}
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle"></i>
-                No se encontró ningún documento con ese hash o ID.
+            <div class="alert alert-danger border-0 shadow-sm d-flex gap-2 align-items-center mb-4">
+                <i class="bi bi-exclamation-octagon-fill text-danger fs-3"></i>
+                <div>
+                    <strong class="text-dark">Evidencia no encontrada</strong>
+                    <p class="small text-muted mb-0">El hash ingresado no corresponde a ningún documento registrado en el protocolo TrustBridge. Es posible que el archivo haya sido alterado o modificado con posterioridad.</p>
+                </div>
             </div>
             {% endif %}
 
             {% if doc %}
-            <div class="card shadow-sm mb-3 border-success">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Documento verificado</h5>
+            <!-- Verification result banner -->
+            <div class="card card-audit mb-4 border-start border-5 border-success">
+                <div class="card-body py-4">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                        <div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 mb-2 small"><i class="bi bi-patch-check-fill"></i> Integridad Certificada</span>
+                            <h3 class="fw-bold text-dark mb-1">{{ doc.title }}</h3>
+                            <p class="text-muted small mb-0">Código ID: <code class="font-monospace">{{ doc.id }}</code></p>
+                        </div>
+                        <div class="text-start text-sm-end">
+                            <div class="certificate-seal">
+                                <i class="bi bi-shield-check"></i> Verificado
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical properties -->
+            <div class="card card-audit mb-4">
+                <div class="card-header bg-light border-bottom text-dark">
+                    <i class="bi bi-file-earmark-lock-fill text-primary"></i> 1. Registro e Identificación del Archivo
                 </div>
                 <div class="card-body">
-                    <table class="table table-borderless mb-0">
+                    <table class="table table-sm table-borderless align-middle mb-0">
                         <tr>
-                            <td class="text-muted w-25">Título</td>
-                            <td class="fw-semibold">{{ doc.title }}</td>
+                            <td class="text-muted small w-25 py-2">Hash de Integridad (SHA-256):</td>
+                            <td class="py-2"><span class="audit-value">{{ doc.hash_sha256 }}</span></td>
                         </tr>
                         <tr>
-                            <td class="text-muted">ID</td>
-                            <td><code>{{ doc.id }}</code></td>
+                            <td class="text-muted small py-2">Propietario / Depositante:</td>
+                            <td class="py-2 fw-semibold text-dark">{{ doc.owner.email }}</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">SHA-256</td>
-                            <td><code>{{ doc.hash_sha256 }}</code></td>
+                            <td class="text-muted small py-2">Fecha de Registro:</td>
+                            <td class="py-2">{{ doc.created_at|date:"d/m/Y H:i:s" }}</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Estado</td>
-                            <td>
-                                <span class="badge {% if doc.status == 'SIGNED' %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+                            <td class="text-muted small py-2">Estado del Protocolo:</td>
+                            <td class="py-2">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
                                     {{ doc.get_status_display }}
                                 </span>
                             </td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Propietario</td>
-                            <td>{{ doc.owner.email }}</td>
-                        </tr>
-                        <tr>
-                            <td class="text-muted">Creado</td>
-                            <td>{{ doc.created_at|date:"d/m/Y H:i:s" }}</td>
                         </tr>
                     </table>
                 </div>
             </div>
 
             {% if sig %}
-            <div class="card shadow-sm mb-3 border-info">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-pen"></i> Datos de la firma</h5>
+            <!-- Signature registry -->
+            <div class="card card-audit mb-4">
+                <div class="card-header bg-light border-bottom text-dark">
+                    <i class="bi bi-pen-fill text-primary"></i> 2. Registro de Firma y Trazabilidad Geoespacial
                 </div>
                 <div class="card-body">
-                    <table class="table table-borderless mb-0">
+                    <table class="table table-sm table-borderless align-middle mb-0">
                         <tr>
-                            <td class="text-muted w-25">Firmado por</td>
-                            <td class="fw-semibold">{{ sig.signer.email }}</td>
+                            <td class="text-muted small w-25 py-2">Firma Concedida Por:</td>
+                            <td class="py-2 fw-bold text-dark">{{ sig.signer.email }}</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Fecha</td>
-                            <td>{{ sig.signed_at|date:"d/m/Y H:i:s" }}</td>
+                            <td class="text-muted small py-2">Sincronización Temporal UTC:</td>
+                            <td class="py-2">{{ sig.signed_at|date:"d/m/Y H:i:s" }}</td>
                         </tr>
                         <tr>
-                            <td class="text-muted">IP</td>
-                            <td><code>{{ sig.ip_address }}</code></td>
+                            <td class="text-muted small py-2">Dirección IP de Firma:</td>
+                            <td class="py-2"><code class="small">{{ sig.ip_address }}</code></td>
                         </tr>
+                        {% if sig.blockchain_tx_hash %}
                         <tr>
-                            <td class="text-muted">Blochain TX</td>
-                            <td><code>{{ sig.blockchain_tx_hash }}</code></td>
-                        </tr>
-                        {% if sig.latitude %}
-                        <tr>
-                            <td class="text-muted">GPS</td>
-                            <td>{{ sig.latitude }}, {{ sig.longitude }}
-                                {% if sig.geo_verified %}<span class="badge bg-success">Verificado</span>{% endif %}
-                            </td>
+                            <td class="text-muted small py-2">Transacción Blockchain TX:</td>
+                            <td class="py-2"><span class="audit-value">{{ sig.blockchain_tx_hash }}</span></td>
                         </tr>
                         {% endif %}
-                        {% if sig.liveness_verified %}
+                        {% if sig.latitude %}
                         <tr>
-                            <td class="text-muted">Liveness</td>
-                            <td><span class="badge bg-success">Verificado</span></td>
+                            <td class="text-muted small py-2">Ubicación GPS Certificada:</td>
+                            <td class="py-2">
+                                <i class="bi bi-geo-alt-fill text-danger"></i> {{ sig.latitude }}, {{ sig.longitude }}
+                                {% if sig.geo_verified %}<span class="badge bg-success-subtle text-success ms-1 small">Coordenadas Válidas</span>{% endif %}
+                            </td>
                         </tr>
                         {% endif %}
                         {% if sig.device_fingerprint %}
                         <tr>
-                            <td class="text-muted">Huella dispositivo</td>
-                            <td><code>{{ sig.device_fingerprint.fingerprint }}</code></td>
-                        </tr>
-                        {% endif %}
-                        {% if sig.verification_video %}
-                        <tr>
-                            <td class="text-muted">Video verificación</td>
-                            <td><a href="{{ sig.verification_video.url }}" class="btn btn-sm btn-outline-info" target="_blank">Ver video</a></td>
+                            <td class="text-muted small py-2">Huella de Dispositivo (FPJS):</td>
+                            <td class="py-2"><code class="small">{{ sig.device_fingerprint.fingerprint }}</code></td>
                         </tr>
                         {% endif %}
                     </table>
                 </div>
             </div>
             {% else %}
-            <div class="alert alert-warning">
-                <i class="bi bi-pen"></i> Este documento aún no ha sido firmado.
+            <div class="alert alert-warning border-0 shadow-sm mb-4">
+                <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Este documento aún no posee firmas de seguridad vinculadas.
             </div>
             {% endif %}
 
             {% if witnesses %}
-            <div class="card shadow-sm mb-3 border-warning">
-                <div class="card-header bg-warning">
-                    <h5 class="mb-0"><i class="bi bi-people"></i> Testigos ({{ witnesses|length }})</h5>
+            <!-- Witnesses validation -->
+            <div class="card card-audit mb-4">
+                <div class="card-header bg-light border-bottom text-dark">
+                    <i class="bi bi-people-fill text-primary"></i> 3. Comparecencias y Testigos Remotos WebRTC
                 </div>
                 <div class="card-body">
                     {% for w in witnesses %}
-                    <div class="mb-2 pb-2 border-bottom">
-                        <strong>{{ w.witness_name }}</strong>
-                        {% if w.identity_confirmed %}<span class="badge bg-success">Identidad confirmada</span>{% endif %}
-                        <br>
-                        <span class="text-muted small">{{ w.created_at|date:"d/m/Y H:i" }}</span>
+                    <div class="mb-3 pb-3 border-bottom {% if forloop.last %}border-0 pb-0 mb-0{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="text-dark">{{ w.witness_name }}</strong>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle small"><i class="bi bi-shield-check"></i> Identidad Confirmada</span>
+                        </div>
+                        <span class="text-muted small d-block mb-2">Auditado el {{ w.completed_at|date:"d/m/Y H:i" }} — Email de registro: {{ w.witness_email }}</span>
                         {% if w.witness_notes %}
-                        <p class="small text-muted mb-0 mt-1">{{ w.witness_notes }}</p>
+                        <div class="p-2 bg-light rounded text-muted small font-italic">
+                            <i class="bi bi-chat-left-text me-1"></i> "{{ w.witness_notes }}"
+                        </div>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -158,38 +207,36 @@
             {% endif %}
 
             {% if analysis %}
-            <div class="card shadow-sm mb-3">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-robot"></i> Análisis IA</h5>
+            <!-- AI Clause assessment -->
+            <div class="card card-audit mb-4">
+                <div class="card-header bg-light border-bottom text-dark">
+                    <i class="bi bi-robot text-primary"></i> 4. Diagnóstico Automático por Inteligencia Artificial
                 </div>
                 <div class="card-body">
-                    <p><strong>Riesgo:</strong> {{ analysis.risk_score }}/100</p>
-                    <p>{{ analysis.summary }}</p>
-                    {% if analysis.recommendations %}
-                    <div class="alert alert-info mb-0">{{ analysis.recommendations }}</div>
-                    {% endif %}
+                    <p class="small text-muted mb-2"><strong>Resumen de Diagnóstico:</strong> {{ analysis.summary }}</p>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="small text-muted">Riesgo Global del Contrato:</span>
+                        <div class="progress flex-fill" style="height: 10px;">
+                            <div class="progress-bar {% if analysis.risk_score >= 60 %}bg-danger{% elif analysis.risk_score >= 30 %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ analysis.risk_score }}%;"></div>
+                        </div>
+                        <span class="badge bg-light text-dark">{{ analysis.risk_score }}/100</span>
+                    </div>
                 </div>
             </div>
             {% endif %}
 
-            {% if doc %}
-            <div class="text-center mt-3">
-                <button class="btn btn-outline-primary" onclick="window.print()">
-                    <i class="bi bi-printer"></i> Imprimir reporte de verificación
+            <!-- Actions block -->
+            <div class="text-center mt-4 mb-5 actions-print-btn">
+                <button class="btn btn-primary btn-lg rounded-pill shadow-sm px-4" onclick="window.print()">
+                    <i class="bi bi-printer"></i> Imprimir Reporte Judicial
                 </button>
-                <a href="{% url 'core_verify_document' %}" class="btn btn-outline-secondary">Nueva búsqueda</a>
+                <a href="{% url 'core_verify_document' %}" class="btn btn-outline-secondary btn-lg rounded-pill px-4 ms-2">
+                    Realizar Otra Consulta
+                </a>
             </div>
-            {% endif %}
+
             {% endif %}
         </div>
     </div>
 </div>
-
-<style>
-@media print {
-    nav, .card-header, .btn, form, .input-group { display: none !important; }
-    .card { border: 1px solid #000 !important; box-shadow: none !important; }
-    body { font-size: 12pt; }
-}
-</style>
 {% endblock %}

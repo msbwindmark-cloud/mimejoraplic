@@ -1,4 +1,5 @@
 import hashlib
+from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -21,16 +22,26 @@ from .services import (
 )
 
 
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect('core_dashboard')
+    return render(request, 'core/landing.html')
+
+
 @login_required
 @otp_required
 def dashboard(request):
     documents = request.user.owned_documents.all().order_by('-created_at')[:5]
     signatures = request.user.signatures.select_related('document').all().order_by('-signed_at')[:5]
     triggers = request.user.triggers.filter(is_active=True).order_by('-created_at')[:5]
+    geofences = GeoFence.objects.filter(created_by=request.user)
+    geofences_count = geofences.count()
     return render(request, 'core/dashboard.html', {
         'documents': documents,
         'signatures': signatures,
         'triggers': triggers,
+        'geofences': geofences,
+        'geofences_count': geofences_count,
     })
 
 
@@ -367,3 +378,140 @@ def verify_document(request):
         'witnesses': witnesses,
         'hash_query': hash_query,
     })
+
+
+@login_required
+@otp_required
+def load_demo_data(request):
+    user = request.user
+    if user.owned_documents.exists():
+        messages.info(request, 'Ya tienes datos. Se añadieron más documentos demo.')
+    import random
+    from django.core.files.base import ContentFile
+
+    demo_pdfs = {
+        'visita': {
+            'title': 'Parte de Visita Inmobiliaria — Paseo de la Castellana 142',
+            'lat': 40.4530, 'lng': -3.6883,
+            'date': timezone.now() - timedelta(hours=2),
+        },
+        'arras': {
+            'title': 'Contrato de Arras / Reserva — L\'Eixample, Barcelona',
+            'lat': 41.3851, 'lng': 2.1734,
+            'date': timezone.now() - timedelta(days=1),
+        },
+        'testamento': {
+            'title': 'Testamento Digital de Activos Custodiados',
+            'lat': 37.3891, 'lng': -5.9845,
+            'date': timezone.now() - timedelta(days=3),
+        },
+        'comparecencia': {
+            'title': 'Acta de Comparecencia Virtual — Puerto Banús',
+            'lat': 36.7212, 'lng': -4.4214,
+            'date': timezone.now() - timedelta(days=5),
+        },
+        'alquiler': {
+            'title': 'Contrato de Alquiler Express — Calle Serrano 45',
+            'lat': 40.4250, 'lng': -3.6910,
+            'date': timezone.now() - timedelta(hours=48),
+        },
+    }
+
+    for key, data in demo_pdfs.items():
+        dummy_content = f"Documento demo: {data['title']}. Generado por TrustBridge para {user.email} - {user.id}."
+        content_bytes = dummy_content.encode('utf-8')
+        sha256 = hashlib.sha256(content_bytes).hexdigest()
+
+        if Document.objects.filter(owner=user, hash_sha256=sha256).exists():
+            continue
+
+        doc = Document.objects.create(
+            owner=user,
+            title=data['title'],
+            status='SIGNED',
+            hash_sha256=sha256,
+        )
+        doc.file.save(f'demo_{key}.txt', ContentFile(content_bytes), save=False)
+        doc.save()
+
+        fp, _ = DeviceFingerprint.objects.get_or_create(
+            user=user,
+            fingerprint=f'demo-fp-{key}-{user.id}',
+            defaults={
+                'user_agent': 'Demo Browser / TrustBridge Presentation',
+                'ip_address': '127.0.0.1',
+            }
+        )
+
+        tx_hash = f'0x{hashlib.sha256(f"{key}-{user.id}-blockchain".encode()).hexdigest()[:40]}'
+
+        Signature.objects.create(
+            document=doc,
+            signer=user,
+            device_fingerprint=fp,
+            ip_address='127.0.0.1',
+            user_agent='Demo Browser / TrustBridge Presentation',
+            latitude=data['lat'],
+            longitude=data['lng'],
+            geo_verified=True,
+            liveness_verified=True,
+            liveness_confidence=0.97,
+            blockchain_tx_hash=tx_hash,
+            signed_at=data['date'],
+        )
+
+        ContractAnalysis.objects.create(
+            document=doc,
+            analyzed_by=user,
+            summary=f'Análisis completado para "{data["title"]}". Documento sin cláusulas de alto riesgo.',
+            risk_score=random.randint(10, 35),
+            risky_clauses=[
+                {'clause': 'Cláusula de penalización por terminación anticipada', 'risk': 'bajo', 'explanation': 'Penalización estándar del mercado.'},
+                {'clause': 'Cláusula de renovación automática', 'risk': 'medio', 'explanation': 'Se renueva automáticamente salvo aviso con 30 días de antelación.'},
+            ],
+            recommendations='Se recomienda especificar claramente las condiciones de renovación y desistimiento.',
+        )
+
+        if key in ('testamento',):
+            ContractTrigger.objects.create(
+                document=doc,
+                created_by=user,
+                check_in_interval_days=30,
+                grace_period_days=7,
+                trigger_action='NOTIFY',
+            )
+
+        if key in ('visita', 'alquiler'):
+            GeoFence.objects.create(
+                document=doc,
+                created_by=user,
+                name=f'Geocerca - {data["title"][:30]}',
+                latitude=data['lat'],
+                longitude=data['lng'],
+                radius_meters=100,
+            )
+
+    request.session['demo_mode'] = True
+    messages.success(request, '🎯 5 documentos demo cargados con firmas GPS, geocercas y análisis IA.')
+    return redirect('core_dashboard')
+
+
+from django.http import JsonResponse
+
+
+@login_required
+def api_docs(request):
+    return render(request, 'core/api_docs.html')
+
+
+@login_required
+def dismiss_demo_mode(request):
+    if 'demo_mode' in request.session:
+        del request.session['demo_mode']
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def dismiss_onboarding(request):
+    request.session['onboarding_dismissed'] = True
+    return JsonResponse({'ok': True})

@@ -1,108 +1,145 @@
 {% extends "base.html" %}
 
-{% block title %}Firmar {{ doc.title }}{% endblock %}
+{% block title %}Cámara de Firma Seguro - {{ doc.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    #preview { max-width: 360px; }
+</style>
+{% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-white-50 small">{{ user.email }}</span>
-            <a href="{% url 'core_dashboard' %}" class="btn btn-outline-light btn-sm">Dashboard</a>
-            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
-        </div>
-    </div>
-</nav>
-
 <div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm mb-3 text-center">
-                <div class="card-body py-5">
-                    <i class="bi bi-file-earmark-text text-primary" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3">{{ doc.title }}</h4>
-                    <p class="text-muted">Estás a punto de firmar este documento con verificación avanzada</p>
+    <!-- Back arrow -->
+    <div class="mb-3">
+        <a href="{% url 'core_document_detail' doc.id %}" class="text-decoration-none text-muted fw-bold small">
+            <i class="bi bi-arrow-left"></i> Cancelar y volver al documento
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left Side: Document info & Security checklist -->
+        <div class="col-lg-5">
+            <div class="card card-chamber mb-4">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-file-earmark-pdf-fill text-danger display-4"></i>
+                    <h5 class="fw-bold mt-3 mb-1 text-dark">{{ doc.title }}</h5>
+                    <p class="text-muted small">Estás a punto de firmar este contrato. Se requiere validación pericial de identidad y ubicación.</p>
                 </div>
             </div>
 
-            <div class="card shadow-sm mb-3">
+            <!-- Security indicators check -->
+            <div class="card card-chamber">
+                <div class="card-header bg-light">
+                    <span class="fw-bold text-dark"><i class="bi bi-shield-check text-primary"></i> Checklist de Evidencia Legal</span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush mb-0">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4" id="step-fp">
+                            <div class="d-flex align-items-center">
+                                <span class="step-number">1</span>
+                                <div>
+                                    <strong class="small d-block text-dark">Huella del Dispositivo</strong>
+                                    <span class="small text-muted font-monospace">FingerprintJS</span>
+                                </div>
+                            </div>
+                            <span id="fp-status" class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">Capturando...</span>
+                        </li>
+
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4" id="step-gps">
+                            <div class="d-flex align-items-center">
+                                <span class="step-number">2</span>
+                                <div>
+                                    <strong class="small d-block text-dark">Ubicación GPS Satelital</strong>
+                                    <span class="small text-muted font-monospace">Auditoría física</span>
+                                </div>
+                            </div>
+                            <span id="gpsStatus" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Pendiente</span>
+                        </li>
+
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4" id="step-video">
+                            <div class="d-flex align-items-center">
+                                <span class="step-number">3</span>
+                                <div>
+                                    <strong class="small d-block text-dark">Prueba de Vida (Face Verification)</strong>
+                                    <span class="small text-muted font-monospace">Videoverificación</span>
+                                </div>
+                            </div>
+                            <span id="videoStatus" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Pendiente</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Camera and sign control panel -->
+        <div class="col-lg-7">
+            <div class="card card-chamber">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Verificaciones de seguridad</h5>
+                    <h5 class="mb-0 text-white"><i class="bi bi-camera-video-fill"></i> Sala de Verificación y Firma</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Video liveness -->
-                    <div class="mb-4">
-                        <h6><i class="bi bi-camera-video text-info"></i> 1. Verificación facial en vivo</h6>
-                        <p class="small text-muted">Presiona grabar, mira a la cámara y di tu nombre completo para verificar tu identidad.</p>
-                        <div class="d-flex align-items-center gap-3">
-                            <video id="preview" class="rounded border" width="240" height="180" autoplay muted></video>
-                            <div>
-                                <button type="button" id="recordBtn" class="btn btn-danger" onclick="toggleRecording()">
-                                    <i class="bi bi-record-circle"></i> Grabar video
+                    
+                    <!-- Chamber View -->
+                    <div class="row align-items-center mb-4">
+                        <div class="col-md-6 text-center">
+                            <div class="position-relative d-inline-block">
+                                <video id="preview" autoplay muted></video>
+                                <div id="recordingBadge" class="position-absolute top-0 start-0 m-3 px-2 py-1 bg-dark bg-opacity-75 text-white rounded d-none small">
+                                    <span class="recording-dot align-middle me-1"></span> REC
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-camera"></i> Control de Video (Paso 3)</h6>
+                            <p class="small text-muted">Para certificar que eres tú y firmas de forma voluntaria, activa tu cámara, haz clic en **Grabar** y di tu nombre completo.</p>
+                            
+                            <div class="d-flex gap-2">
+                                <button type="button" id="recordBtn" class="btn btn-danger btn-sm rounded-pill px-3" onclick="toggleRecording()">
+                                    <i class="bi bi-record-circle"></i> Iniciar Grabación
                                 </button>
-                                <button type="button" id="stopBtn" class="btn btn-secondary d-none" onclick="stopRecording()">
+                                <button type="button" id="stopBtn" class="btn btn-dark btn-sm d-none rounded-pill px-3" onclick="stopRecording()">
                                     <i class="bi bi-stop-circle"></i> Detener
                                 </button>
-                                <div id="videoStatus" class="mt-2 small text-muted"></div>
                             </div>
+                            <div id="videoMessage" class="small mt-2 font-monospace text-muted">Esperando cámara...</div>
                         </div>
                     </div>
 
-                    <!-- GPS -->
+                    <hr class="opacity-25">
+
+                    <!-- GPS Control -->
                     <div class="mb-4">
-                        <h6><i class="bi bi-geo-alt text-warning"></i> 2. Ubicación GPS</h6>
-                        <p class="small text-muted">Tu ubicación será registrada para verificación geoespacial.</p>
-                        <button type="button" class="btn btn-outline-warning btn-sm" id="gpsBtn" onclick="captureGPS()">
-                            <i class="bi bi-crosshair"></i> Capturar ubicación
-                        </button>
-                        <span id="gpsStatus" class="ms-2 small text-muted">No capturada</span>
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-geo-alt-fill text-danger"></i> Captura Satelital (Paso 2)</h6>
+                        <p class="small text-muted">Confirma tu ubicación física para cumplir con la auditoría de geolocalización o geocerca obligatoria.</p>
+                        
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" id="gpsBtn" onclick="captureGPS()">
+                                <i class="bi bi-crosshair"></i> Capturar Coordenadas
+                            </button>
+                            <span id="gpsText" class="small text-muted">Coordenadas no registradas.</span>
+                        </div>
                     </div>
 
-                    <!-- Blockchain -->
-                    <div class="mb-4">
-                        <h6><i class="bi bi-link-45deg text-success"></i> 3. Anclaje a Blockchain</h6>
-                        <p class="small text-muted">La firma será registrada inmutablemente en Polygon/Ethereum.</p>
-                        <span class="badge bg-success">Automático al firmar</span>
-                    </div>
+                    <hr class="opacity-25">
 
-                    <ul class="list-group list-group-flush mb-3">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-check2-square text-success"></i> 2FA verificado</span>
-                            <span class="badge bg-success rounded-pill">Activo</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-fingerprint"></i> Huella digital del dispositivo</span>
-                            <span id="fp-status" class="badge bg-warning rounded-pill">Capturando...</span>
-                        </li>
-                    </ul>
-
+                    <!-- Sign Button Trigger -->
                     <form method="post" id="signForm" enctype="multipart/form-data">
                         {% csrf_token %}
                         <input type="hidden" name="fingerprint" id="fingerprintInput" value="">
                         <input type="hidden" name="latitude" id="latInput" value="">
                         <input type="hidden" name="longitude" id="lonInput" value="">
                         <input type="hidden" name="verification_video" id="videoInput" value="">
-                        <div class="d-flex gap-2">
-                            <button type="submit" id="signBtn" class="btn btn-success btn-lg flex-fill" disabled>
-                                <i class="bi bi-pen"></i> Firmar con verificación total
-                            </button>
-                            <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+                        
+                        <div class="alert alert-warning border-0 small mb-3">
+                            <i class="bi bi-info-circle-fill me-1"></i> Se requiere completar al menos el Paso 1 (Huella) y obtener coordenadas GPS (Paso 2) para proceder con la firma.
                         </div>
-                    </form>
-                </div>
-            </div>
 
-            <div class="card bg-light">
-                <div class="card-body">
-                    <h6><i class="bi bi-info-circle text-primary"></i> Se registrará todo esto:</h6>
-                    <ul class="small text-muted mb-0">
-                        <li><strong>Video</strong> de verificación en vivo (prueba biométrica)</li>
-                        <li><strong>Coordenadas GPS</strong> verificadas contra geocerca si existe</li>
-                        <li><strong>Hash</strong> SHA-256 del documento</li>
-                        <li><strong>Huella digital</strong> única del dispositivo (FingerprintJS)</li>
-                        <li><strong>Transacción</strong> en blockchain (hash inmutable)</li>
-                        <li>Todo queda en el <strong>log de auditoría</strong></li>
-                    </ul>
+                        <button type="submit" id="signBtn" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm" disabled>
+                            <i class="bi bi-patch-check-fill"></i> Firmar con Certificado de Seguridad
+                        </button>
+                    </form>
+
                 </div>
             </div>
         </div>
@@ -115,38 +152,67 @@
 <script>
 // ─── Fingerprint ───
 (async () => {
-    const fp = await FingerprintJS.load();
-    const result = await fp.get();
-    document.getElementById('fingerprintInput').value = result.visitorId;
-    document.getElementById('fp-status').textContent = 'Capturada';
-    document.getElementById('fp-status').className = 'badge bg-success rounded-pill';
-    checkReady();
+    try {
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        document.getElementById('fingerprintInput').value = result.visitorId;
+        
+        const badge = document.getElementById('fp-status');
+        badge.textContent = 'Verificada';
+        badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
+        
+        const step = document.getElementById('step-fp');
+        step.classList.add('step-success');
+        
+        checkReady();
+    } catch(e) {
+        console.error("Error fingerprint", e);
+    }
 })();
 
-// ─── GPS ───
+// ─── GPS Capture ───
 let gpsCaptured = false;
 function captureGPS() {
     if (!navigator.geolocation) {
-        Swal.fire('Error', 'Geolocalización no disponible.', 'error');
+        Swal.fire('Error', 'Tu navegador no soporta geolocalización.', 'error');
         return;
     }
+    
+    document.getElementById('gpsText').textContent = "Buscando satélites...";
+    
     navigator.geolocation.getCurrentPosition(
         function(pos) {
             document.getElementById('latInput').value = pos.coords.latitude;
             document.getElementById('lonInput').value = pos.coords.longitude;
             gpsCaptured = true;
-            document.getElementById('gpsStatus').textContent = `Capturada: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-            document.getElementById('gpsStatus').className = 'ms-2 small text-success';
+            
+            const badge = document.getElementById('gpsStatus');
+            badge.textContent = 'Capturado';
+            badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
+            
+            const step = document.getElementById('step-gps');
+            step.classList.add('step-success');
+            
+            document.getElementById('gpsText').innerHTML = `<i class="bi bi-check-lg text-success"></i> Ubicación obtenida: <strong>${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}</strong>`;
+            
             checkReady();
-            Swal.fire({icon:'success', title:'GPS capturado', timer:1500, showConfirmButton:false});
+            Swal.fire({
+                icon: 'success',
+                title: 'GPS Sincronizado',
+                text: 'Tus coordenadas satelitales han sido vinculadas al documento.',
+                timer: 2000,
+                showConfirmButton: false
+            });
         },
-        function() {
-            Swal.fire('Error', 'No se pudo obtener la ubicación.', 'error');
-        }
+        function(err) {
+            document.getElementById('gpsText').textContent = "Permiso denegado o satélite desconectado.";
+            Swal.fire('Acceso Denegado', 'Por favor, permite el acceso al GPS para continuar.', 'warning');
+        },
+        { enableHighAccuracy: true }
     );
 }
 
-// ─── Video Recording ───
+// ─── Video Liveness Recording ───
 let mediaRecorder = null;
 let recordedChunks = [];
 let videoBlob = null;
@@ -156,39 +222,72 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
     .then(function(stream) {
         const video = document.getElementById('preview');
         video.srcObject = stream;
+        
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
         mediaRecorder.ondataavailable = function(e) {
             if (e.data.size > 0) recordedChunks.push(e.data);
         };
+        
         mediaRecorder.onstop = function() {
             videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
             const url = URL.createObjectURL(videoBlob);
-            document.getElementById('preview').src = url;
-            document.getElementById('videoStatus').textContent = `✅ Video grabado (${(videoBlob.size/1024).toFixed(1)} KB)`;
-            document.getElementById('videoStatus').className = 'mt-2 small text-success';
-            document.getElementById('recordBtn').textContent = 'Volver a grabar';
+            video.srcObject = null;
+            video.src = url;
+            video.controls = true;
+            video.play();
+            
+            const badge = document.getElementById('videoStatus');
+            badge.textContent = 'Verificado';
+            badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
+            
+            const step = document.getElementById('step-video');
+            step.classList.add('step-success');
+            
+            document.getElementById('videoMessage').innerHTML = `<i class="bi bi-shield-check text-success"></i> Video pericial listo (${(videoBlob.size/1024).toFixed(0)} KB)`;
+            
+            document.getElementById('recordBtn').textContent = 'Grabar de nuevo';
+            document.getElementById('recordBtn').classList.remove('d-none');
+            
             checkReady();
         };
+        
+        document.getElementById('videoMessage').textContent = "Cámara lista. Haz clic en Grabar.";
     })
-    .catch(function() {
-        document.getElementById('videoStatus').textContent = '❌ Cámara no disponible';
-        document.getElementById('videoStatus').className = 'mt-2 small text-danger';
+    .catch(function(err) {
+        document.getElementById('videoMessage').innerHTML = `<i class="bi bi-exclamation-triangle text-warning"></i> Cámara no detectada (Modo de demostración activo)`;
+        document.getElementById('videoStatus').textContent = 'Opcional (Demo)';
+        document.getElementById('videoStatus').className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1';
     });
 
 function toggleRecording() {
     if (recording) return;
     recordedChunks = [];
     videoBlob = null;
-    mediaRecorder.start();
-    recording = true;
-    document.getElementById('recordBtn').classList.add('d-none');
-    document.getElementById('stopBtn').classList.remove('d-none');
-    document.getElementById('videoStatus').textContent = '🔴 Grabando... di tu nombre y el documento que firmas';
-    document.getElementById('videoStatus').className = 'mt-2 small text-danger';
-
-    setTimeout(function() {
-        if (recording) stopRecording();
-    }, 5000);
+    
+    // Clear video src if previously recorded
+    const video = document.getElementById('preview');
+    video.controls = false;
+    
+    // Re-bind stream to preview
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(function(stream) {
+            video.src = '';
+            video.srcObject = stream;
+            video.play();
+            
+            mediaRecorder.start();
+            recording = true;
+            
+            document.getElementById('recordBtn').classList.add('d-none');
+            document.getElementById('stopBtn').classList.remove('d-none');
+            document.getElementById('recordingBadge').classList.remove('d-none');
+            document.getElementById('videoMessage').textContent = "🔴 Grabando... Di tu nombre y confirma la firma.";
+            
+            // Auto stop after 5 seconds
+            setTimeout(function() {
+                if (recording) stopRecording();
+            }, 5000);
+        });
 }
 
 function stopRecording() {
@@ -197,12 +296,15 @@ function stopRecording() {
     recording = false;
     document.getElementById('recordBtn').classList.remove('d-none');
     document.getElementById('stopBtn').classList.add('d-none');
+    document.getElementById('recordingBadge').classList.add('d-none');
 }
 
-// ─── Check readiness ───
+// ─── Ready Status Checker ───
 function checkReady() {
     const fpOk = document.getElementById('fingerprintInput').value !== '';
-    document.getElementById('signBtn').disabled = !(fpOk);
+    const gpsOk = gpsCaptured; // required for B2B demo proof
+    
+    document.getElementById('signBtn').disabled = !(fpOk && gpsOk);
 }
 
 // ─── Submit with video ───
@@ -214,7 +316,7 @@ document.getElementById('signForm').addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = document.getElementById('signBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Firmando con seguridad total...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Firmando y registrando transacción en Blockchain...';
 
     var formData = new FormData(this);
     formData.set('csrfmiddlewaretoken', getCSRFToken());
@@ -228,12 +330,15 @@ document.getElementById('signForm').addEventListener('submit', function(e) {
         method: 'POST',
         body: formData,
     }).then(function(resp) {
-        if (resp.redirected) { window.location.href = resp.url; }
-        else { window.location.reload(); }
+        if (resp.redirected) {
+            window.location.href = resp.url;
+        } else {
+            window.location.reload();
+        }
     }).catch(function() {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-pen"></i> Firmar con verificación total';
-        Swal.fire('Error', 'Error al firmar. Intenta de nuevo.', 'error');
+        btn.innerHTML = '<i class="bi bi-patch-check-fill"></i> Firmar con Certificado de Seguridad';
+        Swal.fire('Error', 'Hubo un error de conexión al firmar en la red.', 'error');
     });
 });
 </script>

@@ -1,34 +1,46 @@
 {% extends "base.html" %}
 
-{% block title %}Unirse como testigo{% endblock %}
+{% block title %}Unirse a Comparecencia Virtual — TrustBridge{% endblock %}
+
+{% block extra_head %}{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="row justify-content-center align-items-center min-vh-100">
-        <div class="col-md-6">
+    <div class="row justify-content-center align-items-center min-vh-100 py-5">
+        <div class="col-md-7 col-lg-6">
             <div class="text-center mb-4">
-                <h1 class="display-5 fw-bold text-primary">trustbridge</h1>
-                <p class="text-muted">Verificación de identidad como testigo</p>
+                <a class="text-decoration-none fw-bold d-flex align-items-center justify-content-center gap-2" href="/" style="font-size: 2rem;">
+                    <i class="bi bi-shield-shaded text-primary"></i>
+                    <span class="text-dark tracking-wider">TRUSTBRIDGE</span>
+                </a>
+                <p class="text-muted">Portal de Comparecencia Virtual & Fe Digital</p>
             </div>
-            <div class="card shadow">
+            
+            <div class="card card-premium shadow">
+                <div class="card-header text-center">
+                    <h5 class="mb-0"><i class="bi bi-camera-video-fill"></i> Invitación a Comparecencia Digital</h5>
+                </div>
                 <div class="card-body p-4 text-center">
-                    <i class="bi bi-person-badge text-info" style="font-size: 4rem;"></i>
-                    <h4 class="mt-3">Has sido invitado como testigo</h4>
-                    <p class="text-muted">
-                        El documento <strong>{{ session.document.title }}</strong> requiere
-                        que verifiques la identidad del firmante en vivo.
+                    <div class="avatar-box bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:72px; height:72px;">
+                        <i class="bi bi-person-badge-fill fs-2"></i>
+                    </div>
+                    
+                    <h4 class="fw-bold text-dark mb-2">Fedatario o Testigo Convocado</h4>
+                    <p class="text-muted small px-3">
+                        Has sido invitado por <strong>{{ session.owner.email }}</strong> para actuar como testigo digital y auditar el proceso de firma en vivo del documento:
+                        <br><strong class="text-dark">{{ session.document.title }}</strong>
                     </p>
 
-                    <form method="post" class="mt-4">
+                    <form method="post" class="mt-4 text-start">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label">Tu nombre completo</label>
+                            <label class="form-label fw-bold text-dark">Nombre y Apellidos del Testigo/Fedatario</label>
                             <input type="text" name="witness_name" class="form-control form-control-lg"
-                                   placeholder="Ej: Dr. Juan Pérez" required>
-                            <div class="form-text">Este nombre quedará registrado como testigo oficial</div>
+                                   placeholder="Ej: Lic. Antonio Gómez de la Serna" required>
+                            <div class="form-text">Este nombre oficial se estampará en el acta digital pericial y en la prueba de evidencia.</div>
                         </div>
-                        <button type="submit" class="btn btn-info btn-lg text-white w-100">
-                            <i class="bi bi-camera-video"></i> Unirse a la verificación
+                        <button type="submit" class="btn btn-premium btn-lg w-100 mt-2 shadow-sm">
+                            <i class="bi bi-camera-video"></i> Entrar a la Sala Virtual
                         </button>
                     </form>
                 </div>

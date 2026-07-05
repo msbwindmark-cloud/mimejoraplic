@@ -1,44 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %}Completar verificación{% endblock %}
+{% block title %}Certificación de Comparecencia — TrustBridge{% endblock %}
+
+{% block extra_head %}{% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-dark bg-primary shadow">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="/">trustbridge</a>
-    </div>
-</nav>
 
-<div class="container py-4">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Finalizar verificación</h5>
+        <div class="col-lg-8">
+            <div class="card card-premium shadow mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-clipboard-check-fill text-success"></i> Cierre y Certificación de Comparecencia</h4>
                 </div>
-                <div class="card-body">
-                    <p>Como testigo, debes confirmar que has verificado la identidad de <strong>{{ session.owner.email }}</strong> para el documento <strong>{{ session.document.title }}</strong>.</p>
+                <div class="card-body p-4">
+                    <div class="alert alert-success border-success shadow-sm mb-4">
+                        <div class="d-flex gap-2">
+                            <i class="bi bi-patch-check-fill text-success fs-4"></i>
+                            <div>
+                                <strong class="text-dark">Fe de Identidad y Acta Digital</strong>
+                                <p class="small text-muted mb-0">Como fedatario, abogado o testigo presencial designado, su confirmación a continuación estampará una firma digital certificando que presenció el acto y verificó de manera fehaciente la identidad del firmante.</p>
+                            </div>
+                        </div>
+                    </div>
 
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" name="identity_confirmed" class="form-check-input" id="confirmCheck" role="switch">
-                                <label class="form-check-label" for="confirmCheck">
-                                    <strong>Confirmo que la identidad del firmante ha sido verificada</strong>
+                            <label class="form-label fw-bold">Documento Auditado</label>
+                            <input type="text" class="form-control form-control-lg bg-light" value="{{ session.document.title }}" disabled>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check form-switch p-3 bg-light rounded border">
+                                <input type="checkbox" name="identity_confirmed" class="form-check-input ms-0 me-2" id="confirmCheck" role="switch" required>
+                                <label class="form-check-label fw-bold text-dark" for="confirmCheck">
+                                    Doy Fe de la Identidad del Firmante ({{ session.owner.email }})
                                 </label>
+                                <div class="form-text ms-4">Confirmo bajo mi responsabilidad profesional que el firmante es legítimo.</div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Notas del testigo (opcional)</label>
-                            <textarea name="witness_notes" class="form-control" rows="3"
-                                      placeholder="Ej: Verifiqué su identidad mediante INE y confirmó en video que firmaría el contrato..."></textarea>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Acta Pericial y Notas de la Verificación (Opcional)</label>
+                            <textarea name="witness_notes" class="form-control form-control-lg" rows="4"
+                                      placeholder="Ej: El firmante compareció virtualmente, exhibió su pasaporte oficial y ratificó su firma digital en este acto..."></textarea>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-success btn-lg flex-fill">
-                                <i class="bi bi-check-circle"></i> Completar verificación
+
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <a href="{% url 'core_verify_document' %}" class="btn btn-outline-danger px-4 py-2"><i class="bi bi-x-circle"></i> Denegar / Cancelar</a>
+                            <button type="submit" class="btn btn-premium px-4 py-2">
+                                <i class="bi bi-patch-check-fill text-success me-1"></i> Firmar y Completar Certificación
                             </button>
-                            <a href="{% url 'core_verify_document' %}" class="btn btn-outline-danger btn-lg">Rechazar</a>
                         </div>
                     </form>
                 </div>

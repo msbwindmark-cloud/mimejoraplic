@@ -60,3 +60,13 @@ Todo comentado, listo para activar cuando migres a producción:
 Dependencias core + opcionales comentadas.
 
 Para **PythonAnywhere** solo subes, haces `pip install -r requirements.txt`, `migrate`, `collectstatic`, y apuntas el WSGI. Sin cambios en settings porque SQLite ya está activo por defecto.
+
+
+
+
+
+
+
+8d577bc23674eb78b20bb11edc207ddfdfd4aaf90e36c855860a4e0ff9117b0a
+
+

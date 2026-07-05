@@ -1,86 +1,197 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Panel Profesional{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@11/dist/css/shepherd.css"/>
+<meta name="x-debug-user" content="{{ request.user.email }}">
+<meta name="x-debug-docs" content="{{ documents|length }}">
+<meta name="x-debug-sigs" content="{{ signatures|length }}">
+<meta name="x-debug-trigs" content="{{ triggers|length }}">
+<meta name="x-debug-geos" content="{{ geofences_count|default:0 }}">
+{% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="{% url 'core_dashboard' %}">trustbridge</a>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-white-50 small">{{ user.email }}</span>
-            <span class="badge bg-success">2FA Activo</span>
-            <a href="{% url 'core_verify_document' %}" class="btn btn-outline-light btn-sm">Verificación judicial</a>
-            <a href="{% url 'account_logout' %}" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
+<main class="container py-3 py-md-4">
+    <!-- Floating Demo Badge -->
+    {% if request.session.demo_mode %}
+    <div id="demo-badge" class="demo-badge">
+        <span class="badge-pulse"></span> MODO DEMO — Datos de demostración
+        <button onclick="dismissDemoBadge()" style="background:none;border:none;color:white;margin-left:8px;font-size:18px;line-height:1;cursor:pointer;">&times;</button>
+    </div>
+    {% endif %}
+
+    <!-- Onboarding wizard for first-time users -->
+    {% if documents|length == 0 and not request.session.onboarding_dismissed %}
+    <div class="onboarding-overlay" id="onboarding-overlay">
+        <div class="onboarding-card">
+            <button onclick="dismissOnboarding()" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"></button>
+            <img src="{% static 'img/trustbridge-logo.svg' %}" height="48" alt="TrustBridge" class="mb-3">
+            <h4 class="fw-bold text-white mb-2">Bienvenido a TrustBridge</h4>
+            <p class="text-white-50 small mb-4">Sigue estos pasos para empezar a firmar documentos con validez judicial.</p>
+            <div class="onboarding-steps">
+                <div class="onb-step active" id="onb-1">
+                    <div class="onb-num">1</div>
+                    <div class="onb-text">
+                        <strong>Carga Datos Demo</strong>
+                        <p>Prueba la plataforma al instante con 5 documentos precargados con GPS y Blockchain.</p>
+                        <button onclick="dismissOnboarding();loadDemoData();" class="btn btn-info btn-sm rounded-pill"><i class="bi bi-magic"></i> Cargar ahora</button>
+                    </div>
+                </div>
+                <div class="onb-step" id="onb-2">
+                    <div class="onb-num">2</div>
+                    <div class="onb-text">
+                        <strong>Sube tu primer documento</strong>
+                        <p>O carga un PDF o imagen de contrato directamente desde tu ordenador.</p>
+                        <a href="{% url 'core_document_upload' %}" class="btn btn-primary btn-sm rounded-pill"><i class="bi bi-upload"></i> Subir documento</a>
+                    </div>
+                </div>
+                <div class="onb-step" id="onb-3">
+                    <div class="onb-num">3</div>
+                    <div class="onb-text">
+                        <strong>Realiza el tour guiado</strong>
+                        <p>Conoce todas las funcionalidades del panel en 2 minutos.</p>
+                        <button onclick="dismissOnboarding();startGuidedTour();" class="btn btn-warning btn-sm rounded-pill"><i class="bi bi-compass"></i> Iniciar tour</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</nav>
+    {% endif %}
 
-<main class="container py-4">
+    <!-- Welcome banner / Hero -->
+    <div class="welcome-banner mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <span class="badge bg-info text-dark fw-bold mb-2">FE PÚBLICA & FIRMA GEOLOCALIZADA</span>
+                <h1 class="display-6 fw-bold mb-2">Panel de Control de Fe Digital</h1>
+                <p class="lead text-white-50 mb-0">Protege contratos, asegura comisiones de venta con GPS y custodia testamentos digitales con blindaje pericial.</p>
+            </div>
+            <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex flex-wrap gap-2 justify-content-md-end">
+                <button onclick="startGuidedTour()" class="btn btn-outline-light btn-sm btn-lg-md rounded-pill fw-bold shadow-sm" id="btn-tour">
+                    <i class="bi bi-compass"></i> Tour Guiado
+                </button>
+                <button onclick="startPresentationMode()" class="btn btn-warning btn-sm btn-lg-md rounded-pill fw-bold shadow-sm" id="btn-presentation">
+                    <i class="bi bi-play-circle-fill"></i> ▶ Presentación
+                </button>
+                <button onclick="loadDemoData()" class="btn btn-info btn-sm btn-lg-md rounded-pill fw-bold shadow-sm btn-pulse" id="btn-demo">
+                    <i class="bi bi-magic"></i> Cargar Datos Demo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Summary Row -->
     <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card border-primary shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-subtitle text-muted mb-1">Documentos</h6>
-                    <h2 class="card-title text-primary mb-0">{{ documents|length }}</h2>
+        <div class="col-6 col-md-3">
+            <div class="card card-kpi">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="icon-box bg-primary-subtle text-primary">
+                        <i class="bi bi-file-earmark-lock"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small">Documentos</h6>
+                        <h3 class="fw-bold mb-0 text-primary counter" data-target="{{ documents|length }}">{{ documents|length }}</h3>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-success shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-subtitle text-muted mb-1">Firmas realizadas</h6>
-                    <h2 class="card-title text-success mb-0">{{ signatures|length }}</h2>
+        <div class="col-6 col-md-3">
+            <div class="card card-kpi">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="icon-box bg-success-subtle text-success">
+                        <i class="bi bi-pen"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small">Firmas Activas</h6>
+                        <h3 class="fw-bold mb-0 text-success counter" data-target="{{ signatures|length }}">{{ signatures|length }}</h3>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-info shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-subtitle text-muted mb-1">Dispositivos</h6>
-                    <h2 class="card-title text-info mb-0">{{ user.devices.count }}</h2>
+        <div class="col-6 col-md-3">
+            <div class="card card-kpi">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="icon-box bg-danger-subtle text-danger">
+                        <i class="bi bi-heart-pulse"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small">Testamentos (DMS)</h6>
+                        <h3 class="fw-bold mb-0 text-danger counter" data-target="{{ triggers|length }}">{{ triggers|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-kpi">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="icon-box bg-info-subtle text-info">
+                        <i class="bi bi-pin-map-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small">Zonas GPS Protegidas</h6>
+                        <h3 class="fw-bold mb-0 text-info counter" data-target="{{ geofences_count|default:0 }}">{{ geofences_count|default:0 }}</h3>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-7">
-            <div class="card shadow-sm">
+    <!-- Main Workspace -->
+    <div class="row g-4">
+        <!-- Left Section (Map & Table) -->
+        <div class="col-lg-8">
+            <!-- Leaflet GPS Map Card -->
+            <div class="card card-section mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Mis documentos</h5>
-                    <a href="{% url 'core_document_upload' %}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-lg"></i> Nuevo documento
-                    </a>
+                    <span class="mb-0"><i class="bi bi-geo-alt-fill text-danger"></i> Localizador de Firmas y Geocercas (GPS)</span>
+                    <span class="badge bg-light text-dark font-monospace small"><i class="bi bi-info-circle text-info"></i> Ubicaciones judiciales</span>
                 </div>
                 <div class="card-body">
+                    <div id="leaflet-map"></div>
+                </div>
+            </div>
+
+            <!-- Documents Table -->
+            <div class="card card-section">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="mb-0"><i class="bi bi-folder-fill text-warning"></i> Protocolo de Documentos</span>
+                    <a href="{% url 'core_document_upload' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-upload"></i> Subir PDF</a>
+                </div>
+                <div class="card-body p-0">
                     {% if documents %}
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Título</th>
-                                    <th>Estado</th>
-                                    <th></th>
+                                    <th class="ps-4">Nombre del Documento / Contrato</th>
+                                    <th>Estado Legal</th>
+                                    <th>Creado el</th>
+                                    <th class="pe-4 text-end">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for doc in documents %}
                                 <tr>
-                                    <td>
-                                        <a href="{% url 'core_document_detail' doc.id %}" class="text-decoration-none fw-semibold">{{ doc.title }}</a>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">{{ doc.title }}</div>
+                                        <code class="text-muted small font-monospace">{{ doc.hash_sha256|slice:":12" }}...</code>
                                     </td>
                                     <td>
                                         {% if doc.status == 'SIGNED' %}
-                                        <span class="badge bg-success">Firmado</span>
+                                        <span class="badge badge-status bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle-fill"></i> Firmado & Sellado</span>
                                         {% elif doc.status == 'PENDING' %}
-                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                        <span class="badge badge-status bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-clock-history"></i> Pendiente</span>
                                         {% else %}
-                                        <span class="badge bg-secondary">Borrador</span>
+                                        <span class="badge badge-status bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-file-earmark-text"></i> Borrador</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i>
+                                    <td class="text-muted small">{{ doc.created_at|date:"d/m/Y H:i" }}</td>
+                                    <td class="pe-4 text-end">
+                                        <a href="{% url 'core_document_detail' doc.id %}" class="btn btn-sm btn-premium">
+                                            <i class="bi bi-eye"></i> Gestionar
                                         </a>
                                     </td>
                                 </tr>
@@ -89,68 +200,99 @@
                         </table>
                     </div>
                     {% else %}
-                    <p class="text-muted text-center py-4 mb-0">
-                        <i class="bi bi-file-earmark-text"></i> No tienes documentos aún.
-                    </p>
+                    <div class="text-center py-5" id="empty-state">
+                        <i class="bi bi-file-earmark-text text-muted display-4"></i>
+                        <p class="text-muted mt-2 mb-0">No hay contratos registrados aún.</p>
+                        <div class="mt-3 d-flex gap-2 justify-content-center">
+                            <a href="{% url 'core_document_upload' %}" class="btn btn-sm btn-primary">Subir primer contrato</a>
+                            <button onclick="loadDemoData()" class="btn btn-sm btn-info">
+                                <i class="bi bi-magic"></i> Cargar datos demo
+                            </button>
+                        </div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
         </div>
-        <div class="col-md-5">
-            <div class="card shadow-sm mb-3">
+
+        <!-- Right Section (Sidebar with templates & triggers) -->
+        <div class="col-lg-4">
+            <!-- Quick Templates Library -->
+            <div class="card card-section mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">Firmas recientes</h5>
+                    <span class="mb-0"><i class="bi bi-file-earmark-richtext text-info"></i> Plantillas Inmobiliarias & Notariales</span>
                 </div>
-                <div class="card-body">
-                    {% if signatures %}
-                    <ul class="list-group list-group-flush mb-0">
-                        {% for sig in signatures %}
-                        <li class="list-group-item px-0">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <a href="{% url 'core_document_detail' sig.document.id %}" class="text-decoration-none fw-semibold small">{{ sig.document.title }}</a>
-                                    <br>
-                                    <span class="text-muted small">{{ sig.signed_at|date:"d/m/Y H:i" }}</span>
-                                </div>
-                                <i class="bi bi-check-circle-fill text-success"></i>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="text-muted text-center py-4 mb-0">
-                        <i class="bi bi-pen"></i> Aún no has firmado nada.
-                    </p>
-                    {% endif %}
+                <div class="card-body d-flex flex-column gap-2">
+                    <div class="template-card" onclick="startTemplateDemo('Parte de Visita Inmobiliaria', 'visita')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">Parte de Visita Inmobiliaria</h6>
+                            <span class="badge bg-danger-subtle text-danger text-uppercase small" style="font-size:0.65rem;">GPS Obligatorio</span>
+                        </div>
+                        <p class="small text-muted mb-0">Registra visitas a propiedades y protege comisiones con geocerca y biometría.</p>
+                    </div>
+
+                    <div class="template-card" onclick="startTemplateDemo('Contrato de Arras Express', 'arras')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">Contrato de Arras / Reserva</h6>
+                            <span class="badge bg-success-subtle text-success text-uppercase small" style="font-size:0.65rem;">Blockchain</span>
+                        </div>
+                        <p class="small text-muted mb-0">Asegura la reserva de un inmueble firmando con marca criptográfica inalterable.</p>
+                    </div>
+
+                    <div class="template-card" onclick="startTemplateDemo('Testamento Digital', 'testamento')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">Testamento Digital de Activos</h6>
+                            <span class="badge bg-warning-subtle text-warning text-uppercase small" style="font-size:0.65rem;">Custodia</span>
+                        </div>
+                        <p class="small text-muted mb-0">Libera contraseñas o documentos confidenciales a herederos si hay inactividad.</p>
+                    </div>
+
+                    <div class="template-card" onclick="startTemplateDemo('Acta de Comparecencia Virtual', 'comparecencia')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="fw-bold mb-0 text-dark">Comparecencia Virtual (WebRTC)</h6>
+                            <span class="badge bg-primary-subtle text-primary text-uppercase small" style="font-size:0.65rem;">Testigo Vivo</span>
+                        </div>
+                        <p class="small text-muted mb-0">Firma a distancia bajo la supervisión de un testigo/notario por videollamada.</p>
+                    </div>
                 </div>
             </div>
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Dead Man Switches</h5>
-                    <a href="{% url 'core_triggers_list' %}" class="btn btn-outline-danger btn-sm">Ver todos</a>
+
+            <!-- Stats Chart Card -->
+            <div class="card card-section mb-4">
+                <div class="card-header">
+                    <span class="mb-0"><i class="bi bi-pie-chart text-success"></i> Distribución de Seguridad</span>
                 </div>
                 <div class="card-body">
+                    <canvas id="securityChart" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Dead Man Switches / Digital Testaments -->
+            <div class="card card-section">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="mb-0"><i class="bi bi-heart-pulse-fill text-danger"></i> Custodia Digital Activa</span>
+                    <a href="{% url 'core_triggers_list' %}" class="btn btn-sm btn-outline-danger">Ver todos</a>
+                </div>
+                <div class="card-body p-0">
                     {% if triggers %}
                     <ul class="list-group list-group-flush mb-0">
                         {% for t in triggers %}
-                        <li class="list-group-item px-0">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <a href="{% url 'core_document_detail' t.document.id %}" class="text-decoration-none fw-semibold small">{{ t.document.title }}</a>
-                                    <br>
-                                    <span class="text-muted small">Último check-in: {{ t.last_check_in|date:"d/m/Y" }}</span>
-                                </div>
-                                <a href="{% url 'core_trigger_checkin' t.id %}" class="btn btn-success btn-sm">
-                                    <i class="bi bi-check-lg"></i>
-                                </a>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4">
+                            <div>
+                                <a href="{% url 'core_document_detail' t.document.id %}" class="text-decoration-none fw-bold text-dark d-block small mb-1">{{ t.document.title }}</a>
+                                <span class="text-muted small font-monospace"><i class="bi bi-calendar-event"></i> Último Check-in: {{ t.last_check_in|date:"d/m/Y" }}</span>
                             </div>
+                            <a href="{% url 'core_trigger_checkin' t.id %}" class="btn btn-sm btn-success rounded-pill shadow-sm" title="Realizar check-in de vida">
+                                <i class="bi bi-heart-fill"></i> Check-in
+                            </a>
                         </li>
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-muted text-center py-4 mb-0">
-                        <i class="bi bi-alarm"></i> Sin switches activos.
-                    </p>
+                    <div class="text-center py-4 text-muted small">
+                        <i class="bi bi-clock-history d-block mb-1 fs-5"></i>
+                        No tienes testamentos o custodias activas.
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -160,21 +302,426 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- Leaflet JS for Map -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Shepherd.js for Guided Tour -->
+<script src="https://cdn.jsdelivr.net/npm/shepherd.js@11/dist/js/shepherd.min.js"></script>
+
 <script>
+var shepherdTour = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-    {% if messages %}
-    {% for message in messages %}
-    Swal.fire({
-        icon: '{{ message.tags }}',
-        title: '{{ message.message }}',
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 4000,
-        timerProgressBar: true
+    // 1. Setup Leaflet Map
+    // Default to Madrid coordinates
+    const map = L.map('leaflet-map').setView([40.416775, -3.703790], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Dynamic signatures from database
+    const signatures = [
+        {% for sig in signatures %}
+            {% if sig.latitude and sig.longitude %}
+            {
+                lat: {{ sig.latitude|stringformat:".6f" }},
+                lng: {{ sig.longitude|stringformat:".6f" }},
+                title: "{{ sig.document.title|escapejs }}",
+                signer: "{{ sig.signer.email|escapejs }}",
+                date: "{{ sig.signed_at|date:'d/m/Y H:i' }}",
+                verified: {{ sig.geo_verified|yesno:"true,false" }}
+            },
+            {% endif %}
+        {% endfor %}
+    ];
+
+    // If there are no real signature coordinates, add realistic B2B demo pins
+    if (signatures.length === 0) {
+        const demoPins = [
+            { lat: 40.4530, lng: -3.6883, title: "Parte de Visita Inmobiliaria (Paseo de la Castellana)", signer: "agente.madrid@trustbridge.es", date: "Hace 2 horas", verified: true },
+            { lat: 41.3851, lng: 2.1734, title: "Reserva de Compraventa (L'Eixample, BCN)", signer: "abogado.barcelona@legaltech.es", date: "Ayer, 18:30", verified: true },
+            { lat: 37.3891, lng: -5.9845, title: "Testamento Digital Custodiado", signer: "notario.sevilla@fe-digital.org", date: "02/07/2026", verified: true },
+            { lat: 36.7212, lng: -4.4214, title: "Parte de Visita Inmobiliaria (Puerto Banús)", signer: "agente.marbella@luxuryestates.com", date: "28/06/2026", verified: true }
+        ];
+
+        demoPins.forEach(function(pin) {
+            const marker = L.marker([pin.lat, pin.lng]).addTo(map);
+            marker.bindPopup(`
+                <strong>${pin.title}</strong><br/>
+                <span class="text-muted small"><i class="bi bi-person"></i> ${pin.signer}</span><br/>
+                <span class="text-muted small"><i class="bi bi-calendar"></i> ${pin.date}</span><br/>
+                <span class="badge bg-success-subtle text-success border border-success-subtle mt-1"><i class="bi bi-patch-check"></i> GPS Verificado</span>
+            `);
+        });
+    } else {
+        signatures.forEach(function(pin) {
+            const marker = L.marker([pin.lat, pin.lng]).addTo(map);
+            marker.bindPopup(`
+                <strong>${pin.title}</strong><br/>
+                <span class="text-muted small"><i class="bi bi-person"></i> ${pin.signer}</span><br/>
+                <span class="text-muted small"><i class="bi bi-calendar"></i> ${pin.date}</span><br/>
+                <span class="badge ${pin.verified ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} border mt-1">
+                    <i class="bi bi-pin-map"></i> GPS ${pin.verified ? 'Verificado' : 'No verificado'}
+                </span>
+            `);
+        });
+    }
+
+    // Draw geofence circles and pulsing markers from backend
+    const geofences = [
+        {% for gf in geofences %}
+        { lat: {{ gf.latitude|stringformat:".6f" }}, lng: {{ gf.longitude|stringformat:".6f" }}, radius: {{ gf.radius_meters|stringformat:".0f" }}, name: "{{ gf.name|escapejs }}" },
+        {% endfor %}
+    ];
+
+    geofences.forEach(function(gf) {
+        L.circle([gf.lat, gf.lng], {
+            radius: gf.radius,
+            color: '#f59e0b',
+            fillColor: '#fbbf24',
+            fillOpacity: 0.08,
+            weight: 1.5,
+            dashArray: '5, 8',
+        }).addTo(map).bindPopup(`<strong>${gf.name}</strong><br/>Radio: ${gf.radius}m`);
     });
-    {% endfor %}
-    {% endif %}
+
+    // Connection lines between signature pins (if 2+ signatures exist)
+    const allPins = signatures.length > 0 ? signatures : [
+        {% for sig in signatures %}
+        {% if sig.latitude and sig.longitude %}
+        { lat: {{ sig.latitude|stringformat:".6f" }}, lng: {{ sig.longitude|stringformat:".6f" }} },
+        {% endif %}
+        {% endfor %}
+    ];
+    if (allPins.length >= 2) {
+        const linePoints = allPins.map(function(p) { return [p.lat, p.lng]; });
+        L.polyline(linePoints, {
+            color: '#3b82f6',
+            weight: 1.5,
+            opacity: 0.3,
+            dashArray: '4, 8',
+        }).addTo(map);
+    }
+
+    // 2. Animated Counters (fallback to server value)
+    document.querySelectorAll('.counter').forEach(function(counter) {
+        var target = parseInt(counter.getAttribute('data-target'));
+        if (isNaN(target) || target <= 0) { counter.textContent = target || '0'; return; }
+        counter.textContent = '0';
+        var current = 0;
+        var increment = Math.max(1, Math.ceil(target / 30));
+        function step() {
+            current += increment;
+            if (current >= target) { counter.textContent = target; return; }
+            counter.textContent = current;
+            requestAnimationFrame(step);
+        }
+        step();
+    });
+
+    // 3. Setup Chart.js Doughnut Chart
+    const ctx = document.getElementById('securityChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['GPS Geolocalizado', 'Firma Criptográfica', 'Custodia de Vida (DMS)', 'Testigos Virtuales'],
+            datasets: [{
+                data: [45, 30, 15, 10], // Sample distribution
+                backgroundColor: [
+                    '#ef4444', // red for GPS
+                    '#10b981', // green for Crypto
+                    '#f59e0b', // warning orange for DMS
+                    '#3b82f6'  // blue for Witness
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: { size: 11 }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
 });
+
+// ===================== ONBOARDING =====================
+function dismissOnboarding() {
+    var overlay = document.getElementById('onboarding-overlay');
+    if (overlay) {
+        overlay.style.transition = 'opacity 0.3s';
+        overlay.style.opacity = '0';
+        setTimeout(function() { overlay.remove(); }, 300);
+    }
+    fetch('/dismiss-onboarding/', { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } }).catch(function(){});
+}
+
+// ===================== DEMO BADGE =====================
+function dismissDemoBadge() {
+    var badge = document.getElementById('demo-badge');
+    if (badge) {
+        badge.style.transition = 'opacity 0.3s, transform 0.3s';
+        badge.style.opacity = '0';
+        badge.style.transform = 'translateY(20px)';
+        setTimeout(function() { badge.remove(); }, 300);
+    }
+    // Dismiss on server too
+    fetch('/dismiss-demo-mode/', { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } }).catch(function(){});
+}
+
+// ===================== DEMO DATA =====================
+function loadDemoData() {
+    Swal.fire({
+        title: 'Cargar datos demo',
+        html: `Se generarán <strong>5 documentos</strong> con:<br/>
+        <span class="text-success"><i class="bi bi-geo-alt-fill"></i> Coordenadas GPS reales</span><br/>
+        <span class="text-primary"><i class="bi bi-link-45deg"></i> Hash Blockchain simulado</span><br/>
+        <span class="text-warning"><i class="bi bi-robot"></i> Análisis IA con risk score</span><br/>
+        <span class="text-danger"><i class="bi bi-pin-map-fill"></i> Geocercas de protección</span><br/><br/>
+        <small>Perfecto para demostraciones comerciales.</small>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#1e3c72',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '¡Cargar ahora!',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Generando datos demo...',
+                html: 'Creando documentos, firmas GPS, análisis IA y geocercas.',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            window.location.href = "{% url 'core_load_demo_data' %}";
+        }
+    });
+}
+
+// ===================== GUIDED TOUR =====================
+function startGuidedTour() {
+    if (shepherdTour) {
+        shepherdTour.cancel();
+    }
+
+    const tour = new Shepherd.Tour({
+        useModalOverlay: true,
+        defaultStepOptions: {
+            scrollTo: { behavior: 'smooth', block: 'center' },
+            cancelIcon: { enabled: true },
+            classes: 'shadow-lg',
+            when: {
+                show: function() {
+                    // Highlight element
+                }
+            }
+        }
+    });
+
+    // Step 1: Welcome
+    tour.addStep({
+        id: 'welcome',
+        text: `<div class="text-center mb-2">
+            <img src="{% static 'img/trustbridge-logo.svg' %}" height="40" alt="TrustBridge">
+            <h5 class="fw-bold mt-2">¡Bienvenido a TrustBridge!</h5>
+        </div>
+        <p class="small text-muted mb-0">Este tour guiado te mostrará las funcionalidades clave del panel profesional. Cada paso explica cómo Impacta en tu negocio.</p>`,
+        buttons: [
+            { text: 'Cerrar', action: tour.cancel, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: 'Siguiente →', action: tour.next, classes: 'btn btn-sm btn-premium' }
+        ]
+    });
+
+    // Step 2: KPI Cards
+    tour.addStep({
+        id: 'kpi-cards',
+        attachTo: { element: '.row.g-3.mb-4', on: 'bottom' },
+        text: `<h6 class="fw-bold"><i class="bi bi-bar-chart-line text-primary"></i> KPIs de Actividad</h6>
+        <p class="small text-muted mb-0">Documentos, Firmas GPS, Testamentos Custodiados y Zonas protegidas. Cada número es un argumento de venta para tus clientes.</p>`,
+        buttons: [
+            { text: '← Atrás', action: tour.back, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: 'Siguiente →', action: tour.next, classes: 'btn btn-sm btn-premium' }
+        ]
+    });
+
+    // Step 3: Map
+    tour.addStep({
+        id: 'map',
+        attachTo: { element: '#leaflet-map', on: 'top' },
+        text: `<h6 class="fw-bold"><i class="bi bi-geo-alt-fill text-danger"></i> Mapa GPS de Firmas</h6>
+        <p class="small text-muted mb-0">Cada pin es una firma geolocalizada con coordenadas exactas. En un juicio, demuestras que el firmante <strong>estaba físicamente allí</strong>.</p>`,
+        buttons: [
+            { text: '← Atrás', action: tour.back, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: 'Siguiente →', action: tour.next, classes: 'btn btn-sm btn-premium' }
+        ]
+    });
+
+    // Step 4: Documents Table (fallback if empty)
+    var docEl = document.querySelector('.card-section .table-responsive') || document.querySelector('#empty-state') || document.querySelector('.card-section .card-body.p-0');
+    tour.addStep({
+        id: 'documents',
+        attachTo: docEl ? { element: docEl, on: 'top' } : undefined,
+        text: `<h6 class="fw-bold"><i class="bi bi-folder-fill text-warning"></i> Protocolo de Documentos</h6>
+        <p class="small text-muted mb-0">Cada documento tiene un <strong>hash SHA-256 único</strong> y puede verificarse públicamente desde la página de Auditoría Pericial.</p>`,
+        buttons: [
+            { text: '← Atrás', action: tour.back, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: 'Siguiente →', action: tour.next, classes: 'btn btn-sm btn-premium' }
+        ]
+    });
+
+    // Step 5: Templates
+    tour.addStep({
+        id: 'templates',
+        attachTo: { element: '.card-section .d-flex.flex-column.gap-2', on: 'top' },
+        text: `<h6 class="fw-bold"><i class="bi bi-file-earmark-richtext text-info"></i> Plantillas Sectoriales</h6>
+        <p class="small text-muted mb-0">Partes de Visita GPS, Contratos de Arras, Testamentos Digitales... <strong>cada plantilla resuelve un caso de uso real</strong> para Inmobiliarias, Notarías y Abogados.</p>`,
+        buttons: [
+            { text: '← Atrás', action: tour.back, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: 'Siguiente →', action: tour.next, classes: 'btn btn-sm btn-premium' }
+        ]
+    });
+
+    // Step 6: Chart
+    tour.addStep({
+        id: 'chart',
+        attachTo: { element: '#securityChart', on: 'top' },
+        text: `<h6 class="fw-bold"><i class="bi bi-pie-chart text-success"></i> Distribución de Seguridad</h6>
+        <p class="small text-muted mb-0">Visualiza cómo se distribuyen las medidas de seguridad entre tus documentos: GPS, Criptografía, Custodia y Testigos.</p>`,
+        buttons: [
+            { text: '← Atrás', action: tour.back, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: 'Siguiente →', action: tour.next, classes: 'btn btn-sm btn-premium' }
+        ]
+    });
+
+    // Step 7: Digital Testament (fallback if empty)
+    var trigEl = document.querySelector('.card-section .list-group') || document.querySelector('.card-section .text-center.py-4');
+    tour.addStep({
+        id: 'testament',
+        attachTo: trigEl ? { element: trigEl, on: 'top' } : undefined,
+        text: `<h6 class="fw-bold"><i class="bi bi-heart-pulse-fill text-danger"></i> Custodia Digital / DMS</h6>
+        <p class="small text-muted mb-0">Los <strong>Testamentos Digitales</strong> son el producto estrella para notarios. Configura check-ins periódicos y si el usuario no responde, los documentos se liberan automáticamente a sus herederos.</p>`,
+        buttons: [
+            { text: '← Atrás', action: tour.back, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: 'Siguiente →', action: tour.next, classes: 'btn btn-sm btn-premium' }
+        ]
+    });
+
+    // Step 8: Final
+    tour.addStep({
+        id: 'final',
+        text: `<div class="text-center">
+            <i class="bi bi-check-circle-fill text-success display-4"></i>
+            <h5 class="fw-bold mt-2">¡Ya conoces TrustBridge!</h5>
+        </div>
+        <p class="small text-muted mb-0">Ahora puedes:<br/>
+        • Cargar <strong>datos demo</strong> para ver el panel lleno<br/>
+        • Crear un <strong>documento real</strong> desde el botón superior<br/>
+        • Visitar la <strong>Auditoría Pericial</strong> desde el navbar<br/><br/>
+        <em>¿Listo para impresionar a tu próximo cliente?</em></p>`,
+        buttons: [
+            { text: '← Repetir Tour', action: tour.back, classes: 'btn btn-sm btn-outline-secondary' },
+            { text: '¡Finalizar!', action: tour.complete, classes: 'btn btn-sm btn-success' }
+        ]
+    });
+
+    shepherdTour = tour;
+    tour.start();
+}
+
+// ===================== PRESENTATION MODE =====================
+function startPresentationMode() {
+    if (shepherdTour) {
+        shepherdTour.cancel();
+    }
+
+    // Create progress bar overlay
+    var bar = document.createElement('div');
+    bar.id = 'presentation-bar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,#00d2ff,#3b82f6);z-index:99999;transition:width 0.6s;border-radius:0 2px 2px 0;';
+    document.body.appendChild(bar);
+
+    const tour = new Shepherd.Tour({
+        useModalOverlay: true,
+        defaultStepOptions: {
+            scrollTo: { behavior: 'smooth', block: 'center' },
+            cancelIcon: { enabled: true },
+            classes: 'shadow-lg shepherd-presentation',
+            when: { show: function() { shepherdPresentationActive = true; }, hide: function() { } }
+        }
+    });
+
+    var shepherdPresentationActive = true;
+    var totalSteps = 8;
+    var stepIndex = 0;
+
+    function advanceBar(idx) {
+        stepIndex = idx;
+        var pct = ((idx + 1) / totalSteps * 100);
+        bar.style.width = pct + '%';
+        if (idx === 0) setTimeout(function() { bar.style.width = pct + '%'; }, 50);
+    }
+
+    var labels = ['Bienvenida', 'KPIs', 'Mapa GPS', 'Documentos', 'Plantillas', 'Seguridad', 'Custodia', 'Final'];
+    function textWithBadge(label, title, desc) {
+        return `<div><span class="badge bg-info text-dark mb-2">${label}</span><h5 class="fw-bold">${title}</h5><p class="text-muted small mb-0">${desc}</p></div>`;
+    }
+
+    tour.addStep({ id: 'p-welcome', text: textWithBadge('TrustBridge', 'Plataforma de Firma Digital con Validez Judicial', 'Descubre cómo transformamos la firma digital en una herramienta con validez judicial. Esta presentación recorre automáticamente las funcionalidades clave.'), buttons: [], when: { show: function() { advanceBar(0); } } });
+    tour.addStep({ id: 'p-kpis', attachTo: { element: '.row.g-3.mb-4', on: 'bottom' }, text: textWithBadge('KPIs', 'Indicadores Clave', 'Documentos protegidos, firmas GPS geolocalizadas, testamentos digitales custodiados y geocercas activas. Datos en tiempo real.'), buttons: [], when: { show: function() { advanceBar(1); } } });
+    tour.addStep({ id: 'p-map', attachTo: { element: '#leaflet-map', on: 'top' }, text: textWithBadge('Geolocalización', 'Mapa GPS de Firmas', 'Cada firma tiene coordenadas GPS exactas con validez judicial. Las circunferencias naranjas son geocercas que delimitan zonas permitidas.'), buttons: [], when: { show: function() { advanceBar(2); } } });
+    var pDocEl = document.querySelector('.card-section .table-responsive') || document.querySelector('#empty-state') || document.querySelector('.card-section .card-body.p-0');
+    tour.addStep({ id: 'p-docs', attachTo: pDocEl ? { element: pDocEl, on: 'top' } : undefined, text: textWithBadge('Documentos', 'Protocolo Digital', 'Documentos sellados con hash SHA-256. Cualquier juez o perito puede verificar su autenticidad desde la página de Auditoría Pericial.'), buttons: [], when: { show: function() { advanceBar(3); } } });
+    tour.addStep({ id: 'p-templates', attachTo: { element: '.card-section .d-flex.flex-column.gap-2', on: 'top' }, text: textWithBadge('Plantillas', 'Soluciones Sectoriales', 'Partes de Visita con GPS (Inmobiliarias), Comparecencias WebRTC (Notarías) y Análisis IA (Abogados). Cada una resuelve un caso de uso real.'), buttons: [], when: { show: function() { advanceBar(4); } } });
+    tour.addStep({ id: 'p-chart', attachTo: { element: '#securityChart', on: 'top' }, text: textWithBadge('Seguridad', 'Blindaje Multicapa', 'GPS + Blockchain + Custodia DMS + Testigos Virtuales. Cuatro capas de seguridad que hacen cada firma inatacable en sede judicial.'), buttons: [], when: { show: function() { advanceBar(5); } } });
+    var pTrigEl = document.querySelector('.card-section .list-group') || document.querySelector('.card-section .text-center.py-4');
+    tour.addStep({ id: 'p-triggers', attachTo: pTrigEl ? { element: pTrigEl, on: 'top' } : undefined, text: textWithBadge('Custodia', 'Testamento Digital Activo', 'Configura check-ins periódicos. Si el titular no responde a tiempo, los documentos se liberan automáticamente a sus herederos.'), buttons: [], when: { show: function() { advanceBar(6); } } });
+    tour.addStep({ id: 'p-final', text: `<div class="text-center"><i class="bi bi-check-circle-fill text-success display-3"></i><h4 class="fw-bold mt-3">¿Listo para tu demo comercial?</h4><p class="text-muted mb-3">TrustBridge está preparado para impresionar a tus clientes.</p></div>`, buttons: [{ text: 'Finalizar Presentación', action: function() { tour.complete(); }, classes: 'btn btn-success btn-lg rounded-pill px-4' }], when: { show: function() { advanceBar(7); } } });
+
+    var autoTimer = setInterval(function() {
+        if (tour.isActive()) {
+            try { tour.next(); } catch(e) { clearInterval(autoTimer); cleanup(); }
+        }
+    }, 4000);
+
+    function cleanup() {
+        clearInterval(autoTimer);
+        if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    }
+
+    tour.on('complete', cleanup);
+    tour.on('cancel', cleanup);
+
+    shepherdTour = tour;
+    tour.start();
+}
+
+// ===================== TEMPLATE DEMO =====================
+function startTemplateDemo(name, type) {
+    Swal.fire({
+        title: `¿Crear ${name}?`,
+        html: `Esta acción cargará la plantilla profesional de <strong>${name}</strong> en el flujo de firma digital. Puedes rellenar los datos de tus clientes y la geocerca de seguridad.`,
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#1e3c72',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Crear ahora',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `{% url 'core_document_upload' %}?template=${type}&title=${encodeURIComponent(name)}`;
+        }
+    });
+}
 </script>
 {% endblock %}
