@@ -28,6 +28,27 @@ def landing(request):
     return render(request, 'core/landing.html')
 
 
+from django.http import JsonResponse
+from django.core.mail import send_mail
+
+
+def contact(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        tipo = request.POST.get('type', '').strip()
+        if not name or not email:
+            return JsonResponse({'ok': False, 'error': 'Nombre y email son obligatorios.'})
+        subject = f'Nuevo contacto TrustBridge - {tipo or "Solicitud"}'
+        message = f'Nombre: {name}\nEmail: {email}\nTipo: {tipo or "No especificado"}\n\nSolicita información/demo.'
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [settings.EMAIL_HOST_USER], fail_silently=False)
+            return JsonResponse({'ok': True})
+        except Exception as e:
+            return JsonResponse({'ok': False, 'error': str(e)})
+    return JsonResponse({'ok': False, 'error': 'Método no permitido.'})
+
+
 @login_required
 @otp_required
 def dashboard(request):
@@ -494,9 +515,6 @@ def load_demo_data(request):
     request.session['demo_mode'] = True
     messages.success(request, '🎯 5 documentos demo cargados con firmas GPS, geocercas y análisis IA.')
     return redirect('core_dashboard')
-
-
-from django.http import JsonResponse
 
 
 @login_required

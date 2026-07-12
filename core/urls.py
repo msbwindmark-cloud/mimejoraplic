@@ -16,6 +16,7 @@ urlpatterns = [
     path('witness/<uuid:session_id>/complete/', views.witness_complete, name='witness_complete'),
     path('verify/', views.verify_document, name='core_verify_document'),
     path('api/docs/', views.api_docs, name='core_api_docs'),
+    path('contact/', views.contact, name='core_contact'),
     path('load-demo-data/', views.load_demo_data, name='core_load_demo_data'),
     path('dismiss-demo-mode/', views.dismiss_demo_mode, name='core_dismiss_demo_mode'),
     path('dismiss-onboarding/', views.dismiss_onboarding, name='core_dismiss_onboarding'),
